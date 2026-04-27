@@ -1,0 +1,7 @@
+# Bỏ qua thư mục chứa thư viện (cực kỳ nặng và nhiều file nhỏ rác)
+node_modules/
+
+# Bỏ qua các file mô hình AI cục bộ
+*.tflite
+*.wav
+*.mp3

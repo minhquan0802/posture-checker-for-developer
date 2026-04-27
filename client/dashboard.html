@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Báo Cáo Thống Kê Tư Thế</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; color: #333; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        h2 { margin-top: 0; color: #1f2937; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; }
+        .stat-box { display: flex; gap: 20px; }
+        .stat-item { flex: 1; background: #eff6ff; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #bfdbfe; }
+        .stat-item span { display: block; font-size: 24px; font-weight: bold; color: #2563eb; margin-top: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+        th { background-color: #f9fafb; font-weight: 600; color: #4b5563; }
+        tr:hover { background-color: #f9fafb; }
+        .badge { background: #fee2e2; color: #ef4444; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h2>📊 Báo Cáo Trong Ngày</h2>
+            <div class="stat-box">
+                <div class="stat-item">
+                    Số lần vi phạm
+                    <span id="totalWarnings">0</span>
+                </div>
+                <div class="stat-item">
+                    Tổng thời gian gù lưng
+                    <span id="totalDuration">0s</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🕒 Lịch Sử Cảnh Báo (20 lần gần nhất)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Thời Gian</th>
+                        <th>Loại Cảnh Báo</th>
+                        <th>Thời Lượng</th>
+                    </tr>
+                </thead>
+                <tbody id="logTableBody">
+                    <tr><td colspan="3" style="text-align: center;">Đang tải dữ liệu...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Gọi API lấy dữ liệu tổng quan hôm nay
+        fetch('http://localhost:8080/api/logs/today')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('totalWarnings').innerText = data.totalWarnings;
+                document.getElementById('totalDuration').innerText = data.totalDurationSeconds + 's';
+            })
+            .catch(err => console.error("Lỗi lấy thống kê:", err));
+
+        // Gọi API lấy danh sách 20 lần gần nhất
+        fetch('http://localhost:8080/api/logs/recent')
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.getElementById('logTableBody');
+                tbody.innerHTML = ''; // Xóa dòng "Đang tải dữ liệu"
+                
+                data.forEach(log => {
+                    // Xử lý lại định dạng ngày giờ cho đẹp
+                    const dateObj = new Date(log.createdAt);
+                    const timeString = dateObj.toLocaleTimeString('vi-VN');
+                    const dateString = dateObj.toLocaleDateString('vi-VN');
+                    
+                    // Hiển thị chữ cho thân thiện
+                    const typeText = log.warningType === 'GU_LUNG' ? 'Gù Lưng' : log.warningType;
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>${timeString}</strong> - ${dateString}</td>
+                        <td><span class="badge">${typeText}</span></td>
+                        <td>${log.durationSeconds} giây</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            })
+            .catch(err => {
+                console.error("Lỗi lấy lịch sử:", err);
+                document.getElementById('logTableBody').innerHTML = '<tr><td colspan="3" style="color:red; text-align:center;">Lỗi kết nối Server!</td></tr>';
+            });
+    </script>
+</body>
+</html>
