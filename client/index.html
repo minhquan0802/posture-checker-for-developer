@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Posture Checker - MediaPipe Tasks API</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; text-align: center; background-color: #f4f7f6; margin-top: 30px; }
+        .video-container { position: relative; display: inline-block; box-shadow: 0px 10px 20px rgba(0,0,0,0.2); border-radius: 12px; overflow: hidden; background-color: #000; }
+        video { width: 640px; height: 480px; transform: scaleX(-1); display: block; }
+        canvas { position: absolute; top: 0; left: 0; width: 640px; height: 480px; transform: scaleX(-1); }
+        #status-board { margin-top: 20px; padding: 15px 30px; border-radius: 8px; display: inline-block; font-size: 24px; font-weight: bold; }
+        .loading { background-color: #e0e0e0; color: #333; }
+        .good { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .bad { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .debug-info { margin-top: 10px; font-family: monospace; color: #555; }
+    </style>
+</head>
+<body>
+
+    <h2>Hệ Thống Phân Tích Tư Thế Ngồi (Local Model)</h2>
+
+    <div class="video-container">
+        <video id="input_video" autoplay playsinline muted></video>
+        <canvas id="output_canvas"></canvas>
+    </div>
+
+    <div>
+        <div id="status-board" class="loading">Đang tải Model từ ổ cứng...</div>
+        <div id="debug" class="debug-info">Distance (Mũi - Vai): 0.00</div>
+        <div id="mui" class="debug-info">Mũi (landmarks[0]) : 0.00</div>
+        <div id="VT" class="debug-info">Vai trái (landmarks[11]) : 0.00</div>
+        <div id="VP" class="debug-info">Vai phải (landmarks[12]) : 0.00</div>
+
+    </div>
+
+    <script type="module">
+        // from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.mjs";
+        import {
+            PoseLandmarker,
+            FilesetResolver,
+            DrawingUtils
+        } from "./libs/mediapipe/vision_bundle.mjs";
+
+        const videoElement = document.getElementById('input_video');
+        const canvasElement = document.getElementById('output_canvas');
+        const canvasCtx = canvasElement.getContext('2d');
+        const statusBoard = document.getElementById('status-board');
+        const debugText = document.getElementById('debug');
+
+
+        const noseText = document.getElementById('mui');
+        const leftShoulderText = document.getElementById('VT');
+        const rightShoulderText = document.getElementById('VP');
+
+
+        let poseLandmarker = undefined;
+        let lastVideoTime = -1;
+        const drawingUtils = new DrawingUtils(canvasCtx);
+
+        // 1. Khởi tạo Model
+        const createPoseLandmarker = async () => {
+            const vision = await FilesetResolver.forVisionTasks(
+                // "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm"
+                "./libs/mediapipe/wasm"
+            );
+            
+            poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
+                baseOptions: {
+                    modelAssetPath: "./models/pose_landmarker_full.task", 
+                    delegate: "GPU"
+                },
+                runningMode: "VIDEO",
+                numPoses: 1
+            });
+            
+            statusBoard.innerText = "Model đã sẵn sàng! Đang mở camera...";
+            startCamera();
+        };
+
+        // 2. Mở Webcam
+        function startCamera() {
+            navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
+                videoElement.srcObject = stream;
+                videoElement.addEventListener("loadeddata", predictWebcam);
+            });
+        }
+
+        // 3. Vòng lặp dự đoán và xử lý ảnh
+        async function predictWebcam() {
+            canvasElement.width = videoElement.videoWidth;
+            canvasElement.height = videoElement.videoHeight;
+            
+            let startTimeMs = performance.now();
+            
+            if (lastVideoTime !== videoElement.currentTime) {
+                lastVideoTime = videoElement.currentTime;
+                
+                // Đưa frame hình vào nhận diện
+                poseLandmarker.detectForVideo(videoElement, startTimeMs, (result) => {
+                    canvasCtx.save();
+                    canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+                    
+                    if (result.landmarks.length > 0) {
+                        const landmarks = result.landmarks[0];
+                        
+                        // Vẽ khung xương
+                        drawingUtils.drawLandmarks(landmarks, { radius: 3, color: '#FF0000' });
+                        drawingUtils.drawConnectors(landmarks, PoseLandmarker.POSE_CONNECTIONS, { color: '#00FF00', lineWidth: 3 });
+
+                        // Logic tính toán gù lưng
+                        const nose = landmarks[0];
+                        const leftShoulder = landmarks[11];
+                        const rightShoulder = landmarks[12];
+
+                        const midShoulderY = (leftShoulder.y + rightShoulder.y) / 2;
+                        const verticalDistance = Math.abs(midShoulderY - nose.y);
+                        
+                        debugText.innerText = `Khoảng cách chuẩn hóa (Y): ${verticalDistance.toFixed(3)}`;
+                        noseText.innerText = `Mũi (landmarks[0]) : (x: ${nose.x.toFixed(3)}, y: ${nose.y.toFixed(3)})`;
+                        leftShoulderText.innerText = `Vai trái (landmarks[11]) : (x: ${leftShoulder.x.toFixed(3)}, y: ${leftShoulder.y.toFixed(3)})`;
+                        rightShoulderText.innerText = `Vai phải (landmarks[12]) : (x: ${rightShoulder.x.toFixed(3)}, y: ${rightShoulder.y.toFixed(3)})`;
+
+
+                        // Ngưỡng kiểm tra gù lưng
+                        const THRESHOLD = 0.40; 
+                        
+                        if (verticalDistance < THRESHOLD) {
+                            statusBoard.innerText = "⚠️ BẠN ĐANG GÙ LƯNG! HÃY NGỒI THẲNG LÊN!";
+                            statusBoard.className = "bad";
+                        } else {
+                            statusBoard.innerText = "✅ Tư thế tốt. Hãy duy trì nhé!";
+                            statusBoard.className = "good";
+                        }
+                    }
+                    canvasCtx.restore();
+                });
+            }
+            window.requestAnimationFrame(predictWebcam);
+        }
+
+        createPoseLandmarker();
+    </script>
+</body>
+</html>
