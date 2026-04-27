@@ -35,6 +35,22 @@
     </div>
 
     <script type="module">
+
+        // --- Ứng dụng Web chạy ngầm + Cảnh báo đa phương tiện ---
+        // 1. Xin quyền hiển thị thông báo Desktop của Windows
+        if (Notification.permission !== "denied") {
+            Notification.requestPermission();
+        }
+
+        // const beepSound = new Audio('./audio/Kho_Bau.wav');
+        const beepSound = new Audio('./audio/ong_co_noi_may.mp3');
+
+        // 3. Các biến để quản lý thời gian gù lưng
+        let slouchStartTime = null; // Thời điểm bắt đầu gù lưng
+        let lastAlertTime = 0;      // Thời điểm phát cảnh báo gần nhất (để tránh bíp liên tục)
+        // ----------------------------------
+
+
         // from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.mjs";
         import {
             PoseLandmarker,
@@ -123,15 +139,64 @@
 
 
                         // Ngưỡng kiểm tra gù lưng
-                        const THRESHOLD = 0.40; 
+                        const THRESHOLD = 0.38; // Điều chỉnh dựa trên thực tế
                         
+                        // if (verticalDistance < THRESHOLD) {
+                        //     // statusBoard.innerText = "⚠️ BẠN ĐANG GÙ LƯNG! HÃY NGỒI THẲNG LÊN!";
+                        //     // statusBoard.className = "bad";
+                            
+                        // } else {
+                        //     statusBoard.innerText = "✅ Tư thế tốt. Hãy duy trì nhé!";
+                        //     statusBoard.className = "good";
+                        // }
+
+                        // --- LOGIC BỘ ĐẾM 15 GIÂY ---
                         if (verticalDistance < THRESHOLD) {
-                            statusBoard.innerText = "⚠️ BẠN ĐANG GÙ LƯNG! HÃY NGỒI THẲNG LÊN!";
+                            statusBoard.innerText = "⚠️ BẠN ĐANG GÙ LƯNG!";
                             statusBoard.className = "bad";
+
+                            // 1. Nếu vừa mới bắt đầu gù -> Ghi lại thời gian hiện tại
+                            if (slouchStartTime === null) {
+                                slouchStartTime = Date.now(); 
+                            } 
+                            // 2. Nếu đang gù tiếp -> Tính xem đã gù được bao nhiêu giây
+                            else {
+                                let slouchDuration = (Date.now() - slouchStartTime) / 1000; // Đổi ra giây
+                                debugText.innerText = `Khoảng cách: ${verticalDistance.toFixed(3)} | Gù liên tục: ${slouchDuration.toFixed(1)} giây`;
+
+                                // 3. Nếu gù liên tục QUÁ 15 GIÂY
+                                if (slouchDuration >= 5) {
+                                    
+                                    // Kiểm tra xem lần cảnh báo trước cách đây đủ 5 giây chưa (để không bị kêu réo liên tục)
+                                    if (Date.now() - lastAlertTime > 5000) {
+                                        
+                                        // Phát tiếng Bíp
+                                        beepSound.play().catch(e => console.log("Lỗi phát âm thanh (cần click vào trang web 1 lần để trình duyệt cho phép phát tiếng)"));
+                                        
+                                        // Đẩy thông báo ra ngoài màn hình Windows
+                                        if (Notification.permission === "granted") {
+                                            new Notification("Nhắc nhở từ Trợ lý AI", { 
+                                                body: "Bạn đã gù lưng 15 giây rồi, ngồi thẳng lên nào!" 
+                                            });
+                                        }
+
+                                        // Cập nhật lại thời gian vừa cảnh báo
+                                        lastAlertTime = Date.now();
+                                    }
+                                }
+                            }
                         } else {
+                            // NẾU NGỒI THẲNG -> RESET MỌI THỨ VỀ NHƯ CŨ
+                            beepSound.pause();
+                            beepSound.currentTime = 0;
+                            slouchStartTime = null; // Xóa bộ đếm thời gian
                             statusBoard.innerText = "✅ Tư thế tốt. Hãy duy trì nhé!";
                             statusBoard.className = "good";
+                            debugText.innerText = `Khoảng cách: ${verticalDistance.toFixed(3)}`;
                         }
+
+
+
                     }
                     canvasCtx.restore();
                 });
@@ -141,5 +206,7 @@
 
         createPoseLandmarker();
     </script>
+
+
 </body>
 </html>
