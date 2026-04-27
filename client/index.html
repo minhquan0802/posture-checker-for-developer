@@ -43,11 +43,11 @@
         }
 
         // const beepSound = new Audio('./audio/Kho_Bau.wav');
-        const beepSound = new Audio('./audio/ong_co_noi_may.mp3');
+        const beepSound = new Audio('./assets/ong_co_noi_may.mp3');
 
         // 3. Các biến để quản lý thời gian gù lưng
         let slouchStartTime = null; // Thời điểm bắt đầu gù lưng
-        let lastAlertTime = 0;      // Thời điểm phát cảnh báo gần nhất (để tránh bíp liên tục)
+        let lastAlertTime = 0;      // Thời điểm phát cảnh báo gần nhất
         // ----------------------------------
 
 
@@ -120,8 +120,10 @@
                     if (result.landmarks.length > 0) {
                         const landmarks = result.landmarks[0];
                         
-                        // Vẽ khung xương
+                        // Vẽ chấm đỏ tại các khớp xương
                         drawingUtils.drawLandmarks(landmarks, { radius: 3, color: '#FF0000' });
+
+                        //Vẽ các đường nối màu xanh giữa các khớp xương
                         drawingUtils.drawConnectors(landmarks, PoseLandmarker.POSE_CONNECTIONS, { color: '#00FF00', lineWidth: 3 });
 
                         // Logic tính toán gù lưng
@@ -179,6 +181,23 @@
                                                 body: "Bạn đã gù lưng 15 giây rồi, ngồi thẳng lên nào!" 
                                             });
                                         }
+
+
+                                        // --- GỌI API LƯU XUỐNG SPRING BOOT ---
+                                        fetch('http://localhost:8080/api/logs', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                                warningType: "GU_LUNG",
+                                                durationSeconds: Math.floor(slouchDuration), // Số giây đã gù (VD: 15)
+                                                distanceValue: verticalDistance
+                                            })
+                                        })
+                                        .then(response => console.log("Đã gửi DB thành công!"))
+                                        .catch(error => console.error("Lỗi gọi API:", error));
+                                        // -------------------------------------
+
+
 
                                         // Cập nhật lại thời gian vừa cảnh báo
                                         lastAlertTime = Date.now();
