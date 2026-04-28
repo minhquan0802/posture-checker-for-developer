@@ -8,6 +8,28 @@ app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 let mainWindow;
 let tray;
 let dashboardWindow = null;
+let settingsWindow = null;
+
+function openSettings() {
+    if (settingsWindow) {
+        settingsWindow.focus();
+        return;
+    }
+
+    settingsWindow = new BrowserWindow({
+        width: 650,
+        height: 600,
+        title: "Cài Đặt & Hiệu Chuẩn",
+        autoHideMenuBar: true,
+        webPreferences: { nodeIntegration: false }
+    });
+
+    settingsWindow.loadFile(path.join(__dirname, 'settings.html'));
+
+    settingsWindow.on('closed', () => {
+        settingsWindow = null;
+    });
+}
 
 function openDashboard() {
     // Nếu cửa sổ đã mở rồi thì đưa nó lên trên cùng, không tạo thêm cái mới
@@ -41,7 +63,7 @@ app.whenReady().then(() => {
         // height: 600,
         width: 1000,
         height: 800,
-        show: false, // Không hiện cửa sổ lúc mới bật
+        show: true, // Không hiện cửa sổ lúc mới bật
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false,
@@ -52,7 +74,10 @@ app.whenReady().then(() => {
     });
 
     // 2. Trỏ vào index.html để hiển thị giao diện
-    mainWindow.loadFile(path.join(__dirname, 'index.html'));
+    // mainWindow.loadFile(path.join(__dirname, 'index.html'));
+
+    //Mở file login.html thay vì index.html
+    mainWindow.loadFile(path.join(__dirname, 'login.html'));
 
     // 3. Xử lý khi bấm nút X (Không thoát app mà chỉ ẩn đi)
     mainWindow.on('close', function (event) {
@@ -66,10 +91,12 @@ app.whenReady().then(() => {
     
     const contextMenu = Menu.buildFromTemplate([
         { label: 'Hiển thị Camera', click: () => mainWindow.show() },
-        { label: 'Xem Báo Cáo Thống Kê', click: () => openDashboard() },
+        { label: 'Số lần ngồi gù', click: () => openDashboard() },
+        { label: 'Cài Đặt & Hiệu Chuẩn', click: () => openSettings() },
         { type: 'separator' }, // Tạo một đường kẻ ngang
         { label: 'Thoát hoàn toàn', click: () => {
             if (dashboardWindow) dashboardWindow.destroy(); // Đóng Dashboard nếu đang mở
+            if (settingsWindow) settingsWindow.destroy(); // Dọn dẹp luôn cửa sổ settings
             mainWindow.destroy();
             app.quit();
         }}

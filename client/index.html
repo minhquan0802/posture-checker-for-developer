@@ -141,7 +141,7 @@
 
 
                         // Ngưỡng kiểm tra gù lưng
-                        const THRESHOLD = 0.38; // Điều chỉnh dựa trên thực tế
+                        // const THRESHOLD = 0.38; // Điều chỉnh dựa trên thực tế
                         
                         // if (verticalDistance < THRESHOLD) {
                         //     // statusBoard.innerText = "⚠️ BẠN ĐANG GÙ LƯNG! HÃY NGỒI THẲNG LÊN!";
@@ -152,8 +152,48 @@
                         //     statusBoard.className = "good";
                         // }
 
+
+                        // Lấy ngưỡng từ LocalStorage khi khởi động camera
+                        let currentThreshold = 0.38; // Giá trị mặc định an toàn
+                        const userInDb = JSON.parse(localStorage.getItem('currentUser'));
+                        if (userInDb && userInDb.threshold) {
+                            currentThreshold = userInDb.threshold;
+                        }
+
+                        // BÍ QUYẾT TỐI ƯU CỦA ELECTRON: Lắng nghe sự thay đổi từ cửa sổ Dashboard
+                        window.addEventListener('storage', () => {
+                            const updatedUser = JSON.parse(localStorage.getItem('currentUser'));
+                            if (updatedUser && updatedUser.threshold) {
+                                currentThreshold = updatedUser.threshold;
+                                console.log("AI đã nhận được ngưỡng gù lưng mới:", currentThreshold);
+                            }
+                        });
+
+
+                        // ---- ĐOẠN CODE THÊM MỚI: LẮNG NGHE YÊU CẦU HIỆU CHUẨN ----
+                        const calibrationStatus = localStorage.getItem('calibrationStatus');
+
+                        if (calibrationStatus === 'START') {
+                            // 1. Lấy mảng dữ liệu đang lưu tạm ra (nếu chưa có thì tạo mảng rỗng)
+                            let samples = JSON.parse(localStorage.getItem('calibrationData') || '[]');
+                            
+                            // 2. Nhét thêm giá trị khoảng cách hiện tại vào mảng
+                            // Chỉ lấy giới hạn khoảng 150-200 mẫu (tương đương 5 giây chạy 30fps) để tránh tràn bộ nhớ
+                            if (samples.length < 200) {
+                                samples.push(verticalDistance);
+                                
+                                // 3. Lưu ngược lại lên LocalStorage để cửa sổ Settings lấy ra tính toán
+                                localStorage.setItem('calibrationData', JSON.stringify(samples));
+                                
+                                console.log("Đang lấy mẫu hiệu chuẩn: ", verticalDistance);
+                            }
+                        }
+
+
+
+
                         // --- LOGIC BỘ ĐẾM 15 GIÂY ---
-                        if (verticalDistance < THRESHOLD) {
+                        if (verticalDistance < currentThreshold) {
                             statusBoard.innerText = "⚠️ BẠN ĐANG GÙ LƯNG!";
                             statusBoard.className = "bad";
 
