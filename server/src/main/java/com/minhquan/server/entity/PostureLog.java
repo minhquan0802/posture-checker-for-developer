@@ -15,7 +15,7 @@ public class PostureLog {
     private Long id;
 
     @Column(name = "user_id")
-    private Integer userId = 1; // Tạm thời fix cứng là 1
+    private Integer userId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "warning_type", nullable = false)
