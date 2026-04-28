@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Xác thực người dùng</title>
+    <style>
+        /* CSS cơ bản cho gọn gàng */
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f0f2f5; }
+        .auth-box { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 300px; }
+        .form-group { margin-bottom: 15px; }
+        input { width: 100%; padding: 8px; box-sizing: border-box; margin-top: 5px; }
+        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px;}
+        .switch-text { text-align: center; margin-top: 15px; font-size: 14px; color: #555; cursor: pointer; text-decoration: underline; }
+        
+        /* Class để ẩn form */
+        .hidden { display: none; }
+
+        /* Thêm các class này vào dưới cùng của thẻ <style> */
+        .password-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .password-container input {
+            width: 100%;
+            padding-right: 35px; /* Chừa chỗ cho con mắt */
+            box-sizing: border-box;
+        }
+        .toggle-password {
+            position: absolute;
+            right: 10px;
+            cursor: pointer;
+            user-select: none;
+            color: #666;
+            margin-top: 5px; /* Căn chỉnh cho vừa vặn với input */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="auth-box">
+        <div id="loginSection">
+            <h2 style="text-align: center;">Đăng Nhập</h2>
+            <div class="form-group">
+                <label>Tài khoản</label>
+                <input type="text" id="loginUsername">
+            </div>
+            <div class="form-group">
+                <label>Mật khẩu</label>
+                <div class="password-container">
+                    <input type="password" id="loginPassword">
+                    <span class="toggle-password" onclick="togglePasswordVisibility('loginPassword', this)">👁️</span>
+                </div>
+            </div>
+            <button onclick="handleLogin()">Đăng Nhập</button>
+            <div class="switch-text" onclick="toggleForm()">Chưa có tài khoản? Đăng ký ngay</div>
+        </div>
+
+        <div id="registerSection" class="hidden">
+            <h2 style="text-align: center;">Đăng Ký</h2>
+            <div class="form-group">
+                <label>Tài khoản mới</label>
+                <input type="text" id="regUsername">
+            </div>
+            <div class="form-group">
+                <label>Mật khẩu</label>
+                <div class="password-container">
+                    <input type="password" id="regPassword">
+                    <span class="toggle-password" onclick="togglePasswordVisibility('regPassword', this)">👁️</span>
+                </div>
+            </div>
+            <button onclick="handleRegister()" style="background: #28a745;">Tạo Tài Khoản</button>
+            <div class="switch-text" onclick="toggleForm()">Đã có tài khoản? Quay lại đăng nhập</div>
+        </div>
+    </div>
+
+    <script>
+        // Hàm ẩn/hiện qua lại giữa 2 form
+        function toggleForm() {
+            const loginForm = document.getElementById('loginSection');
+            const regForm = document.getElementById('registerSection');
+            
+            loginForm.classList.toggle('hidden');
+            regForm.classList.toggle('hidden');
+        }
+
+        // Hàm gọi API Đăng Nhập
+        function handleLogin() {
+            const user = document.getElementById('loginUsername').value;
+            const pass = document.getElementById('loginPassword').value;
+
+            // Gọi API bằng fetch
+            fetch('http://localhost:8080/api/users/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: user, password: pass })
+            })
+            .then(response => {
+                if (!response.ok) throw new Error("Sai tài khoản hoặc mật khẩu");
+                return response.json();
+            })
+            .then(data => {
+                // Đăng nhập thành công!
+                // 1. Lưu thông tin user (kèm threshold) vào bộ nhớ cục bộ
+                localStorage.setItem('currentUser', JSON.stringify(data));
+                
+                // 2. Chuyển thẳng sang trang Camera (index.html)
+                window.location.href = 'index.html'; 
+            })
+            .catch(error => {
+                alert(error.message); // Báo lỗi lên màn hình nếu sai pass
+            });
+        }
+
+        // Hàm gọi API Đăng Ký
+        function handleRegister() {
+            const user = document.getElementById('regUsername').value;
+            const pass = document.getElementById('regPassword').value;
+
+            // Kiểm tra rỗng sơ bộ ở Frontend
+            if (!user || !pass) {
+                alert("Vui lòng nhập đầy đủ tài khoản và mật khẩu!");
+                return;
+            }
+
+            // Gọi API Đăng Ký
+            fetch('http://localhost:8080/api/users/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: user, password: pass })
+            })
+            .then(async response => {
+                if (!response.ok) {
+                    // Hứng câu thông báo lỗi từ Backend (ví dụ: "Tên đăng nhập đã tồn tại!")
+                    const errorMessage = await response.text();
+                    throw new Error(errorMessage);
+                }
+                return response.json(); // Nếu thành công thì parse JSON
+            })
+            .then(data => {
+                alert("Đăng ký thành công! Mời bạn đăng nhập.");
+                
+                document.getElementById('loginUsername').value = user;
+                document.getElementById('loginPassword').value = ''; 
+                
+                document.getElementById('regUsername').value = '';
+                document.getElementById('regPassword').value = '';
+
+                toggleForm();
+
+                // FIX LỖI MẤT FOCUS CỦA ELECTRON:
+                // Đợi 100ms cho UI lật xong form, rồi ép con trỏ chuột nháy vào ô mật khẩu
+                setTimeout(() => {
+                    document.getElementById('loginPassword').focus();
+                }, 100);
+            })
+            .catch(error => {
+                // Hiển thị lỗi lên màn hình
+                alert("Lỗi đăng ký: " + error.message);
+            });
+
+
+            // Hàm xử lý ẩn/hiện mật khẩu
+        function togglePasswordVisibility(inputId, iconElement) {
+            const input = document.getElementById(inputId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                iconElement.innerText = '🙈'; // Đổi icon khi hiện mật khẩu
+            } else {
+                input.type = 'password';
+                iconElement.innerText = '👁️'; // Đổi lại icon khi ẩn
+            }
+        }
+        }
+
+
+
+    </script>
+</body>
+</html>
