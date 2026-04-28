@@ -42,93 +42,106 @@
     </div>
 
     <script>
-        // --- LOGIC HIỆU CHUẨN ---
-        let isCalibrating = false;
-        let calibrationSamples = [];
 
-        function startCalibration() {
-            const statusBody = document.getElementById('calibrationStatus');
-            const btn = document.getElementById('btnCalibrate');
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
             
-            isCalibrating = true;
-            calibrationSamples = [];
-            btn.disabled = true;
-            
-            // Gửi tín hiệu sang index.html qua localStorage để index.html bắt đầu gửi data
-            localStorage.setItem('calibrationStatus', 'START');
-            
-            let countdown = 3;
-            let timer = setInterval(() => {
-                statusBody.innerText = `Hãy ngồi thẳng! Bắt đầu sau: ${countdown}s`;
-                countdown--;
+            // KIỂM TRA ĐĂNG NHẬP
+            if (!currentUser || !currentUser.id) {
+                alert("Phiên làm việc hết hạn, vui lòng đăng nhập lại!");
+                window.close();
+                // window.location.href = 'login.html'; // Chuyển hướng về trang đăng nhập
+                return; // Dừng thực thi các lệnh phía dưới
+            }
+
+            // --- LOGIC HIỆU CHUẨN ---
+            let isCalibrating = false;
+            let calibrationSamples = [];
+
+            function startCalibration() {
+                const statusBody = document.getElementById('calibrationStatus');
+                const btn = document.getElementById('btnCalibrate');
                 
-                if (countdown < 0) {
-                    clearInterval(timer);
-                    statusBody.innerText = "⚡ Đang lấy mẫu... (Giữ nguyên tư thế)";
+                isCalibrating = true;
+                calibrationSamples = [];
+                btn.disabled = true;
+                
+                // Gửi tín hiệu sang index.html qua localStorage để index.html bắt đầu gửi data
+                localStorage.setItem('calibrationStatus', 'START');
+                
+                let countdown = 3;
+                let timer = setInterval(() => {
+                    statusBody.innerText = `Hãy ngồi thẳng! Bắt đầu sau: ${countdown}s`;
+                    countdown--;
                     
-                    setTimeout(() => { finishCalibration(); }, 5000);
+                    if (countdown < 0) {
+                        clearInterval(timer);
+                        statusBody.innerText = "⚡ Đang lấy mẫu... (Giữ nguyên tư thế)";
+                        
+                        setTimeout(() => { finishCalibration(); }, 5000);
+                    }
+                }, 1000);
+            }
+
+            function finishCalibration() {
+                isCalibrating = false;
+                const btn = document.getElementById('btnCalibrate');
+                const statusBody = document.getElementById('calibrationStatus');
+                
+                // Lấy cục data mẫu mà index.html vừa lưu vào localStorage
+                const samplesStr = localStorage.getItem('calibrationData');
+                if (samplesStr) {
+                    calibrationSamples = JSON.parse(samplesStr);
                 }
-            }, 1000);
-        }
-
-        function finishCalibration() {
-            isCalibrating = false;
-            const btn = document.getElementById('btnCalibrate');
-            const statusBody = document.getElementById('calibrationStatus');
-            
-            // Lấy cục data mẫu mà index.html vừa lưu vào localStorage
-            const samplesStr = localStorage.getItem('calibrationData');
-            if (samplesStr) {
-                calibrationSamples = JSON.parse(samplesStr);
-            }
-            
-            if (calibrationSamples.length > 0) {
-                const average = calibrationSamples.reduce((a, b) => a + b) / calibrationSamples.length;
-                const suggestedThreshold = parseFloat((average * 0.85).toFixed(2));
                 
-                document.getElementById('thresholdSlider').value = suggestedThreshold;
-                document.getElementById('thresholdDisplay').innerText = suggestedThreshold;
-                statusBody.innerText = `✅ Xong! Ngưỡng đề xuất: ${suggestedThreshold}`;
+                if (calibrationSamples.length > 0) {
+                    const average = calibrationSamples.reduce((a, b) => a + b) / calibrationSamples.length;
+                    const suggestedThreshold = parseFloat((average * 0.85).toFixed(2));
+                    
+                    document.getElementById('thresholdSlider').value = suggestedThreshold;
+                    document.getElementById('thresholdDisplay').innerText = suggestedThreshold;
+                    statusBody.innerText = `✅ Xong! Ngưỡng đề xuất: ${suggestedThreshold}`;
+                    
+                    saveThreshold(suggestedThreshold); 
+                } else {
+                    statusBody.innerText = "❌ Lỗi: Không nhận diện được khuôn mặt.";
+                }
                 
-                saveThreshold(suggestedThreshold); 
-            } else {
-                statusBody.innerText = "❌ Lỗi: Không nhận diện được khuôn mặt.";
+                // Dọn dẹp cờ hiệu chuẩn
+                localStorage.removeItem('calibrationStatus');
+                localStorage.removeItem('calibrationData');
+                btn.disabled = false;
             }
-            
-            // Dọn dẹp cờ hiệu chuẩn
-            localStorage.removeItem('calibrationStatus');
-            localStorage.removeItem('calibrationData');
-            btn.disabled = false;
-        }
 
-        // --- LOGIC LƯU THRESHOLD ---
-        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-        if (currentUser && currentUser.threshold) {
-            document.getElementById('thresholdSlider').value = currentUser.threshold;
-            document.getElementById('thresholdDisplay').innerText = currentUser.threshold;
-        }
+            // --- LOGIC LƯU THRESHOLD ---
+            if (currentUser && currentUser.threshold) {
+                document.getElementById('thresholdSlider').value = currentUser.threshold;
+                document.getElementById('thresholdDisplay').innerText = currentUser.threshold;
+            }
 
-        document.getElementById('thresholdSlider').addEventListener('input', function() {
-            document.getElementById('thresholdDisplay').innerText = this.value;
+            document.getElementById('thresholdSlider').addEventListener('input', function() {
+                document.getElementById('thresholdDisplay').innerText = this.value;
+            });
+
+            function saveThreshold(val = null) {
+                if (!currentUser || !currentUser.id) return;
+                const newThreshold = val !== null ? val : parseFloat(document.getElementById('thresholdSlider').value);
+
+                fetch(`http://localhost:8080/api/users/${currentUser.id}/threshold`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newThreshold)
+                })
+                .then(res => {
+                    if (!res.ok) throw new Error("Lỗi cập nhật Server");
+                    currentUser.threshold = newThreshold;
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    if(val === null) alert("Đã lưu ngưỡng mới thành công!"); // Chỉ báo alert nếu user tự bấm nút
+                })
+                .catch(err => alert(err.message));
+            }
         });
-
-        function saveThreshold(val = null) {
-            if (!currentUser || !currentUser.id) return;
-            const newThreshold = val !== null ? val : parseFloat(document.getElementById('thresholdSlider').value);
-
-            fetch(`http://localhost:8080/api/users/${currentUser.id}/threshold`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newThreshold)
-            })
-            .then(res => {
-                if (!res.ok) throw new Error("Lỗi cập nhật Server");
-                currentUser.threshold = newThreshold;
-                localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                if(val === null) alert("Đã lưu ngưỡng mới thành công!"); // Chỉ báo alert nếu user tự bấm nút
-            })
-            .catch(err => alert(err.message));
-        }
     </script>
 </body>
 </html>

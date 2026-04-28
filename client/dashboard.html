@@ -53,44 +53,64 @@
     </div>
 
     <script>
-        // Gọi API lấy dữ liệu tổng quan hôm nay
-        fetch('http://localhost:8080/api/logs/today')
-            .then(res => res.json())
-            .then(data => {
-                document.getElementById('totalWarnings').innerText = data.totalWarnings;
-                document.getElementById('totalDuration').innerText = data.totalDurationSeconds + 's';
-            })
-            .catch(err => console.error("Lỗi lấy thống kê:", err));
+        // Bọc toàn bộ logic vào sự kiện khi trang đã tải xong
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // 1. Lấy thông tin user hiện tại
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            
+            // KIỂM TRA ĐĂNG NHẬP
+            if (!currentUser || !currentUser.id) {
+                alert("Phiên làm việc hết hạn, vui lòng đăng nhập lại!");
+                window.close();
+                // window.location.href = 'login.html'; // Chuyển hướng về trang đăng nhập
+                return; // Dừng thực thi các lệnh phía dưới
+            }
 
-        // Gọi API lấy danh sách 20 lần gần nhất
-        fetch('http://localhost:8080/api/logs/recent')
-            .then(res => res.json())
-            .then(data => {
-                const tbody = document.getElementById('logTableBody');
-                tbody.innerHTML = ''; // Xóa dòng "Đang tải dữ liệu"
-                
-                data.forEach(log => {
-                    // Xử lý lại định dạng ngày giờ cho đẹp
-                    const dateObj = new Date(log.createdAt);
-                    const timeString = dateObj.toLocaleTimeString('vi-VN');
-                    const dateString = dateObj.toLocaleDateString('vi-VN');
+            const userId = currentUser.id;
+
+            // 2. Gọi API lấy thống kê hôm nay
+            fetch(`http://localhost:8080/api/logs/today/${userId}`)
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('totalWarnings').innerText = data.totalWarnings;
+                    document.getElementById('totalDuration').innerText = data.totalDurationSeconds + 's';
+                })
+                .catch(err => console.error("Lỗi lấy thống kê:", err));
+
+            // 3. Gọi API lấy danh sách 20 lần gần nhất
+            fetch(`http://localhost:8080/api/logs/recent/${userId}`)
+                .then(res => res.json())
+                .then(data => {
+                    const tbody = document.getElementById('logTableBody');
+                    if (!tbody) return;
                     
-                    // Hiển thị chữ cho thân thiện
-                    const typeText = log.warningType === 'GU_LUNG' ? 'Gù Lưng' : log.warningType;
+                    tbody.innerHTML = ''; 
+                    
+                    data.forEach(log => {
+                        const dateObj = new Date(log.createdAt);
+                        const timeString = dateObj.toLocaleTimeString('vi-VN');
+                        const dateString = dateObj.toLocaleDateString('vi-VN');
+                        
+                        const typeText = log.warningType === 'GU_LUNG' ? 'Gù Lưng' : log.warningType;
 
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td><strong>${timeString}</strong> - ${dateString}</td>
-                        <td><span class="badge">${typeText}</span></td>
-                        <td>${log.durationSeconds} giây</td>
-                    `;
-                    tbody.appendChild(tr);
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td><strong>${timeString}</strong> - ${dateString}</td>
+                            <td><span class="badge">${typeText}</span></td>
+                            <td>${log.durationSeconds} giây</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                })
+                .catch(err => {
+                    console.error("Lỗi lấy lịch sử:", err);
+                    const tbody = document.getElementById('logTableBody');
+                    if (tbody) {
+                        tbody.innerHTML = '<tr><td colspan="3" style="color:red; text-align:center;">Lỗi kết nối Server!</td></tr>';
+                    }
                 });
-            })
-            .catch(err => {
-                console.error("Lỗi lấy lịch sử:", err);
-                document.getElementById('logTableBody').innerHTML = '<tr><td colspan="3" style="color:red; text-align:center;">Lỗi kết nối Server!</td></tr>';
-            });
+        });
     </script>
 </body>
 </html>

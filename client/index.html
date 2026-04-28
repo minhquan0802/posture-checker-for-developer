@@ -14,6 +14,34 @@
         .good { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .bad { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         .debug-info { margin-top: 10px; font-family: monospace; color: #555; }
+
+        /* --- CSS CHO POPUP HIỆU CHUẨN --- */
+        .popup-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.6); /* Làm mờ camera phía sau */
+            display: flex; justify-content: center; align-items: center;
+            z-index: 9999; /* Đảm bảo nổi lên trên cùng */
+            transition: opacity 0.3s ease;
+        }
+        .popup-overlay.hidden {
+            opacity: 0;
+            pointer-events: none; /* Không bấm được khi bị ẩn */
+        }
+        .popup-content {
+            background: white; padding: 25px; border-radius: 12px;
+            width: 350px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        .popup-content h3 { margin-top: 0; color: #1f2937; }
+        .popup-status { margin: 15px 0; font-size: 15px; color: #4b5563; }
+        .popup-actions { display: flex; flex-direction: column; gap: 10px; }
+        .popup-actions button {
+            padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;
+            background: #e5e7eb; color: #374151; transition: 0.2s;
+        }
+        .popup-actions button:hover { background: #d1d5db; }
+        .popup-actions button.primary { background: #6366f1; color: white; }
+        .popup-actions button.primary:hover { background: #4f46e5; }
+        .popup-actions button:disabled { background: #9ca3af; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -32,6 +60,26 @@
         <div id="VT" class="debug-info">Vai trái (landmarks[11]) : 0.00</div>
         <div id="VP" class="debug-info">Vai phải (landmarks[12]) : 0.00</div>
 
+    </div>
+
+    <div id="calibrationPopup" class="popup-overlay">
+        <div class="popup-content">
+            <h3>Chào mừng trở lại! 👋</h3>
+            <p style="font-size: 14px; color: #666;">Hôm nay bạn ngồi ở vị trí mới hay vị trí cũ?</p>
+
+            <div id="popupStatus" class="popup-status">
+                Ngưỡng AI hiện tại: <strong id="currentThresholdDisplay" style="color: #2563eb;">0.40</strong>
+            </div>
+
+            <div class="popup-actions">
+                <button id="btnRecalibratePopup" class="primary" onclick="startPopupCalibration()">
+                    🎯 Hiệu chuẩn lại chỗ ngồi (5s)
+                </button>
+                <button id="btnKeepOldPopup" onclick="closePopup()">
+                    ❌ Dùng ngưỡng cũ (Bỏ qua)
+                </button>
+            </div>
+        </div>
     </div>
 
     <script type="module">
@@ -73,6 +121,98 @@
         let poseLandmarker = undefined;
         let lastVideoTime = -1;
         const drawingUtils = new DrawingUtils(canvasCtx);
+
+        // Biến module-scope để popup và vòng lặp AI dùng chung
+        let currentThreshold = 0.38;
+        let userInDb = JSON.parse(localStorage.getItem('currentUser'));
+        if (userInDb && userInDb.threshold) {
+            currentThreshold = userInDb.threshold;
+        }
+        window.addEventListener('storage', () => {
+            const updatedUser = JSON.parse(localStorage.getItem('currentUser'));
+            if (updatedUser && updatedUser.threshold) {
+                currentThreshold = updatedUser.threshold;
+                console.log("AI đã nhận được ngưỡng gù lưng mới:", currentThreshold);
+            }
+        });
+
+        // --- LOGIC XỬ LÝ POPUP VÀ HIỆU CHUẨN TẠI CHỖ ---
+        let isPopupCalibrating = false;
+        let popupCalibrationSamples = [];
+
+        // 1. Cập nhật số liệu cũ lên Popup khi vừa mở app
+        if (userInDb && userInDb.threshold) {
+            document.getElementById('currentThresholdDisplay').innerText = userInDb.threshold;
+        }
+
+        // 2. Hàm đóng Popup (Tương đương việc "Không có gì thay đổi")
+        function closePopup() {
+            document.getElementById('calibrationPopup').classList.add('hidden');
+        }
+
+        // 3. Hàm bắt đầu hiệu chuẩn từ Popup
+        function startPopupCalibration() {
+            const statusDiv = document.getElementById('popupStatus');
+            const btnKeep = document.getElementById('btnKeepOldPopup');
+            const btnRecal = document.getElementById('btnRecalibratePopup');
+
+            isPopupCalibrating = true;
+            popupCalibrationSamples = [];
+
+            btnKeep.style.display = 'none'; // Ẩn nút bỏ qua
+            btnRecal.disabled = true;       // Khóa nút hiệu chuẩn
+
+            let countdown = 3;
+            let timer = setInterval(() => {
+                statusDiv.innerHTML = `<span style="color:#ef4444; font-weight:bold;">Hãy ngồi thẳng! Bắt đầu sau: ${countdown}s</span>`;
+                countdown--;
+
+                if (countdown < 0) {
+                    clearInterval(timer);
+                    statusDiv.innerHTML = `<span style="color:#10b981; font-weight:bold;">⚡ Đang lấy mẫu AI... (Giữ nguyên tư thế)</span>`;
+
+                    // Chạy lấy mẫu trong 5 giây
+                    setTimeout(() => { finishPopupCalibration(); }, 5000);
+                }
+            }, 1000);
+        }
+
+        // 4. Hàm chốt kết quả hiệu chuẩn
+        function finishPopupCalibration() {
+            isPopupCalibrating = false; // Dừng thu thập
+
+            if (popupCalibrationSamples.length > 0) {
+                const average = popupCalibrationSamples.reduce((a, b) => a + b) / popupCalibrationSamples.length;
+                const newThreshold = parseFloat((average * 0.85).toFixed(2));
+
+                // Cập nhật biến AI đang chạy ngầm
+                currentThreshold = newThreshold;
+
+                // Cập nhật LocalStorage
+                if (userInDb) {
+                    userInDb.threshold = newThreshold;
+                    localStorage.setItem('currentUser', JSON.stringify(userInDb));
+
+                    // Gọi API lưu xuống Database luôn
+                    fetch(`http://localhost:8080/api/users/${userInDb.id}/threshold`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(newThreshold)
+                    }).catch(e => console.log("Lỗi lưu DB ngầm:", e));
+                }
+
+                alert("Đã cập nhật ngưỡng mới: " + newThreshold);
+            } else {
+                alert("Lỗi: Camera không thấy rõ khuôn mặt!");
+            }
+
+            // Đóng popup sau khi xong
+            closePopup();
+        }
+
+        // Expose hàm popup ra window vì script là module
+        window.closePopup = closePopup;
+        window.startPopupCalibration = startPopupCalibration;
 
         // 1. Khởi tạo Model
         const createPoseLandmarker = async () => {
@@ -133,7 +273,12 @@
 
                         const midShoulderY = (leftShoulder.y + rightShoulder.y) / 2;
                         const verticalDistance = Math.abs(midShoulderY - nose.y);
-                        
+
+                        // Hút dữ liệu nếu Popup đang ra lệnh hiệu chuẩn
+                        if (isPopupCalibrating) {
+                            popupCalibrationSamples.push(verticalDistance);
+                        }
+
                         debugText.innerText = `Khoảng cách chuẩn hóa (Y): ${verticalDistance.toFixed(3)}`;
                         noseText.innerText = `Mũi (landmarks[0]) : (x: ${nose.x.toFixed(3)}, y: ${nose.y.toFixed(3)})`;
                         leftShoulderText.innerText = `Vai trái (landmarks[11]) : (x: ${leftShoulder.x.toFixed(3)}, y: ${leftShoulder.y.toFixed(3)})`;
@@ -153,24 +298,9 @@
                         // }
 
 
-                        // Lấy ngưỡng từ LocalStorage khi khởi động camera
-                        let currentThreshold = 0.38; // Giá trị mặc định an toàn
-                        const userInDb = JSON.parse(localStorage.getItem('currentUser'));
-                        if (userInDb && userInDb.threshold) {
-                            currentThreshold = userInDb.threshold;
-                        }
+                        // currentThreshold và userInDb được khai báo ở module-scope phía trên
 
-                        // BÍ QUYẾT TỐI ƯU CỦA ELECTRON: Lắng nghe sự thay đổi từ cửa sổ Dashboard
-                        window.addEventListener('storage', () => {
-                            const updatedUser = JSON.parse(localStorage.getItem('currentUser'));
-                            if (updatedUser && updatedUser.threshold) {
-                                currentThreshold = updatedUser.threshold;
-                                console.log("AI đã nhận được ngưỡng gù lưng mới:", currentThreshold);
-                            }
-                        });
-
-
-                        // ---- ĐOẠN CODE THÊM MỚI: LẮNG NGHE YÊU CẦU HIỆU CHUẨN ----
+                        // ---- LẮNG NGHE YÊU CẦU HIỆU CHUẨN ----
                         const calibrationStatus = localStorage.getItem('calibrationStatus');
 
                         if (calibrationStatus === 'START') {
@@ -190,8 +320,6 @@
                         }
 
 
-
-
                         // --- LOGIC BỘ ĐẾM 15 GIÂY ---
                         if (verticalDistance < currentThreshold) {
                             statusBoard.innerText = "⚠️ BẠN ĐANG GÙ LƯNG!";
@@ -207,7 +335,7 @@
                                 debugText.innerText = `Khoảng cách: ${verticalDistance.toFixed(3)} | Gù liên tục: ${slouchDuration.toFixed(1)} giây`;
 
                                 // 3. Nếu gù liên tục QUÁ 15 GIÂY
-                                if (slouchDuration >= 5) {
+                                if (slouchDuration >= 15) {
                                     
                                     // Kiểm tra xem lần cảnh báo trước cách đây đủ 5 giây chưa (để không bị kêu réo liên tục)
                                     if (Date.now() - lastAlertTime > 5000) {
@@ -224,17 +352,20 @@
 
 
                                         // --- GỌI API LƯU XUỐNG SPRING BOOT ---
-                                        fetch('http://localhost:8080/api/logs', {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({
-                                                warningType: "GU_LUNG",
-                                                durationSeconds: Math.floor(slouchDuration), // Số giây đã gù (VD: 15)
-                                                distanceValue: verticalDistance
+                                        if (userInDb && userInDb.id) {
+                                            fetch('http://localhost:8080/api/logs', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                    userId: userInDb.id,
+                                                    warningType: "GU_LUNG",
+                                                    durationSeconds: Math.floor(slouchDuration),
+                                                    distanceValue: verticalDistance
+                                                })
                                             })
-                                        })
-                                        .then(response => console.log("Đã gửi DB thành công!"))
-                                        .catch(error => console.error("Lỗi gọi API:", error));
+                                            .then(response => console.log("Đã gửi DB thành công cho User:", userInDb.username))
+                                            .catch(error => console.error("Lỗi gọi API:", error));
+                                        }
                                         // -------------------------------------
 
 
@@ -264,6 +395,23 @@
         }
 
         createPoseLandmarker();
+
+
+        // Sử dụng thư viện electron để nhận lệnh từ Main Process
+        // Nếu bạn chưa có require('electron'), hãy thêm vào đầu script
+        const { ipcRenderer } = require('electron');
+
+        ipcRenderer.on('logout-command', () => {
+            // 1. Xóa sạch dấu vết user
+            localStorage.removeItem('currentUser');
+            
+            // 2. Chuyển hướng về trang login
+            window.location.href = 'login.html';
+            
+            // 3. Hiển thị lại cửa sổ để user biết đã đăng xuất thành công
+            // (Lệnh này có thể gọi thông qua ipcRenderer gửi ngược lại Main hoặc đơn giản là để window.show())
+            console.log("Đã đăng xuất thành công!");
+        });
     </script>
 
 
