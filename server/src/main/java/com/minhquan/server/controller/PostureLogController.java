@@ -26,16 +26,15 @@ public class PostureLogController {
         return ResponseEntity.ok("Lưu log thành công!");
     }
 
-    @GetMapping("/today")
-    public ResponseEntity<DailyStatResponse> getTodayStats() {
-        DailyStatResponse stats = postureLogService.getTodayStats();
-        return ResponseEntity.ok(stats);
+    // API: http://localhost:8080/api/logs/today/{userId}
+    @GetMapping("/today/{userId}")
+    public ResponseEntity<DailyStatResponse> getTodayStats(@PathVariable Integer userId) {
+        return ResponseEntity.ok(postureLogService.getTodayStats(userId));
     }
 
-    // API 2: http://localhost:8080/api/logs/recent
-    @GetMapping("/recent")
-    public ResponseEntity<List<PostureLog>> getRecentLogs() {
-        List<PostureLog> logs = postureLogService.getRecentLogs();
-        return ResponseEntity.ok(logs);
+    // API: http://localhost:8080/api/logs/recent/{userId}
+    @GetMapping("/recent/{userId}")
+    public ResponseEntity<List<PostureLog>> getRecentLogs(@PathVariable Integer userId) {
+        return ResponseEntity.ok(postureLogService.getRecentLogs(userId));
     }
 }

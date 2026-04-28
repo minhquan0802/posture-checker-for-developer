@@ -9,9 +9,9 @@ import java.util.List;
 
 @Repository
 public interface PostureLogRepository extends JpaRepository<PostureLog, Long> {
-    // Lấy tất cả log từ một mốc thời gian (dùng để lọc log trong ngày hôm nay)
-    List<PostureLog> findByCreatedAtAfterOrderByCreatedAtDesc(LocalDateTime startTime);
+    // Lọc theo cả userId và thời gian
+    List<PostureLog> findByUserIdAndCreatedAtAfterOrderByCreatedAtDesc(Integer userId, LocalDateTime startTime);
 
-    // Lấy 20 log mới nhất để hiển thị lên bảng lịch sử
-    List<PostureLog> findTop20ByOrderByCreatedAtDesc();
+    // Lấy 20 log mới nhất của riêng User đó
+    List<PostureLog> findTop20ByUserIdOrderByCreatedAtDesc(Integer userId);
 }

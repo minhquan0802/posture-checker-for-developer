@@ -2,6 +2,8 @@ package com.minhquan.server.service;
 
 
 import com.minhquan.server.dto.DailyStatResponse;
+import com.minhquan.server.entity.User;
+import com.minhquan.server.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import com.minhquan.server.dto.PostureLogRequest;
@@ -19,41 +21,44 @@ public class PostureLogService {
     @Autowired
     private PostureLogRepository postureLogRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
     public void processAndSaveLog(PostureLogRequest request) {
-        // Có thể validate thêm logic ở đây (VD: check số âm) trước khi lưu
         if (request.getDurationSeconds() < 0) {
             throw new IllegalArgumentException("Thời gian gù lưng không hợp lệ!");
         }
 
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với ID: " + request.getUserId()));
+
         // Chuyển DTO thành Entity
         PostureLog log = new PostureLog();
+        log.setUserId(user.getId());
         log.setWarningType(request.getWarningType());
         log.setDurationSeconds(request.getDurationSeconds());
         log.setDistanceValue(request.getDistanceValue());
 
-        // Lưu xuống Database
         postureLogRepository.save(log);
 
-        System.out.println("[Service] Đã xử lý và lưu log: " + request.getWarningType() + " - " + request.getDurationSeconds() + "s");
+        System.out.println("[Service] Đã xử lý log cho User ID " + request.getUserId() + ": " + request.getWarningType() + " - " + request.getDurationSeconds() + "s");
     }
 
-    public DailyStatResponse getTodayStats() {
-        // Lấy mốc thời gian 00:00:00 của ngày hôm nay
+
+    public DailyStatResponse getTodayStats(Integer userId) {
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
 
-        // Gọi database lấy toàn bộ log từ rạng sáng đến giờ
-        List<PostureLog> todayLogs = postureLogRepository.findByCreatedAtAfterOrderByCreatedAtDesc(startOfDay);
+        // Chỉ lấy log của User hiện tại
+        List<PostureLog> todayLogs = postureLogRepository.findByUserIdAndCreatedAtAfterOrderByCreatedAtDesc(userId, startOfDay);
 
-        // Tính tổng số giây vi phạm bằng Stream API
         int totalDuration = todayLogs.stream()
                 .mapToInt(PostureLog::getDurationSeconds)
                 .sum();
 
-        // Trả kết quả (Tổng số dòng log, Tổng số giây)
         return new DailyStatResponse(todayLogs.size(), totalDuration);
     }
 
-    public List<PostureLog> getRecentLogs() {
-        return postureLogRepository.findTop20ByOrderByCreatedAtDesc();
+    public List<PostureLog> getRecentLogs(Integer userId) {
+        return postureLogRepository.findTop20ByUserIdOrderByCreatedAtDesc(userId);
     }
 }

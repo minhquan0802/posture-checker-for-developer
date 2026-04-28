@@ -5,6 +5,7 @@ import lombok.Data;
 
 @Data
 public class PostureLogRequest {
+    private Integer userId;
     private WarningType warningType;
     private Integer durationSeconds;
     private Float distanceValue;
