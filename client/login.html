@@ -1,19 +1,63 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <title>Xác thực người dùng</title>
     <style>
         /* CSS cơ bản cho gọn gàng */
-        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f0f2f5; }
-        .auth-box { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 300px; }
-        .form-group { margin-bottom: 15px; }
-        input { width: 100%; padding: 8px; box-sizing: border-box; margin-top: 5px; }
-        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px;}
-        .switch-text { text-align: center; margin-top: 15px; font-size: 14px; color: #555; cursor: pointer; text-decoration: underline; }
-        
+        body {
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: #f0f2f5;
+        }
+
+        .auth-box {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            width: 300px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            margin-top: 5px;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .switch-text {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+            color: #555;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
         /* Class để ẩn form */
-        .hidden { display: none; }
+        .hidden {
+            display: none;
+        }
 
         /* Thêm các class này vào dưới cùng của thẻ <style> */
         .password-container {
@@ -21,21 +65,26 @@
             display: flex;
             align-items: center;
         }
+
         .password-container input {
             width: 100%;
-            padding-right: 35px; /* Chừa chỗ cho con mắt */
+            padding-right: 35px;
+            /* Chừa chỗ cho con mắt */
             box-sizing: border-box;
         }
+
         .toggle-password {
             position: absolute;
             right: 10px;
             cursor: pointer;
             user-select: none;
             color: #666;
-            margin-top: 5px; /* Căn chỉnh cho vừa vặn với input */
+            margin-top: 5px;
+            /* Căn chỉnh cho vừa vặn với input */
         }
     </style>
 </head>
+
 <body>
 
     <div class="auth-box">
@@ -81,7 +130,7 @@
             const currentUser = JSON.parse(localStorage.getItem('currentUser'));
             if (currentUser && currentUser.id) {
                 console.log("Đã tìm thấy User, đang chuyển hướng...");
-                window.location.href = 'index.html'; 
+                window.location.href = 'index.html';
             }
         })();
 
@@ -90,7 +139,7 @@
         function toggleForm() {
             const loginForm = document.getElementById('loginSection');
             const regForm = document.getElementById('registerSection');
-            
+
             loginForm.classList.toggle('hidden');
             regForm.classList.toggle('hidden');
         }
@@ -106,21 +155,22 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: user, password: pass })
             })
-            .then(response => {
-                if (!response.ok) throw new Error("Sai tài khoản hoặc mật khẩu");
-                return response.json();
-            })
-            .then(data => {
-                // Đăng nhập thành công!
-                // 1. Lưu thông tin user (kèm threshold) vào bộ nhớ cục bộ
-                localStorage.setItem('currentUser', JSON.stringify(data));
-                
-                // 2. Chuyển thẳng sang trang Camera (index.html)
-                window.location.href = 'index.html'; 
-            })
-            .catch(error => {
-                alert(error.message); // Báo lỗi lên màn hình nếu sai pass
-            });
+                .then(response => {
+                    if (!response.ok) throw new Error("Sai tài khoản hoặc mật khẩu");
+                    return response.json();
+                })
+                .then(data => {
+                    // Đăng nhập thành công!
+                    // 1. Lưu thông tin user (kèm threshold) vào bộ nhớ cục bộ
+                    localStorage.setItem('currentUser', JSON.stringify(data));
+
+                    // 2. Chuyển thẳng sang trang Camera (index.html)
+                    window.location.href = 'index.html'; 
+                    
+                })
+                .catch(error => {
+                    alert(error.message); // Báo lỗi lên màn hình nếu sai pass
+                });
         }
 
         // Hàm gọi API Đăng Ký
@@ -140,35 +190,35 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: user, password: pass })
             })
-            .then(async response => {
-                if (!response.ok) {
-                    // Hứng câu thông báo lỗi từ Backend (ví dụ: "Tên đăng nhập đã tồn tại!")
-                    const errorMessage = await response.text();
-                    throw new Error(errorMessage);
-                }
-                return response.json(); // Nếu thành công thì parse JSON
-            })
-            .then(data => {
-                alert("Đăng ký thành công! Mời bạn đăng nhập.");
-                
-                document.getElementById('loginUsername').value = user;
-                document.getElementById('loginPassword').value = ''; 
-                
-                document.getElementById('regUsername').value = '';
-                document.getElementById('regPassword').value = '';
+                .then(async response => {
+                    if (!response.ok) {
+                        // Hứng câu thông báo lỗi từ Backend (ví dụ: "Tên đăng nhập đã tồn tại!")
+                        const errorMessage = await response.text();
+                        throw new Error(errorMessage);
+                    }
+                    return response.json(); // Nếu thành công thì parse JSON
+                })
+                .then(data => {
+                    alert("Đăng ký thành công! Mời bạn đăng nhập.");
 
-                toggleForm();
+                    document.getElementById('loginUsername').value = user;
+                    document.getElementById('loginPassword').value = '';
 
-                // FIX LỖI MẤT FOCUS CỦA ELECTRON:
-                // Đợi 100ms cho UI lật xong form, rồi ép con trỏ chuột nháy vào ô mật khẩu
-                setTimeout(() => {
-                    document.getElementById('loginPassword').focus();
-                }, 100);
-            })
-            .catch(error => {
-                // Hiển thị lỗi lên màn hình
-                alert("Lỗi đăng ký: " + error.message);
-            });
+                    document.getElementById('regUsername').value = '';
+                    document.getElementById('regPassword').value = '';
+
+                    toggleForm();
+
+                    // FIX LỖI MẤT FOCUS CỦA ELECTRON:
+                    // Đợi 100ms cho UI lật xong form, rồi ép con trỏ chuột nháy vào ô mật khẩu
+                    setTimeout(() => {
+                        document.getElementById('loginPassword').focus();
+                    }, 100);
+                })
+                .catch(error => {
+                    // Hiển thị lỗi lên màn hình
+                    alert("Lỗi đăng ký: " + error.message);
+                });
         }
 
         // Hàm xử lý ẩn/hiện mật khẩu
@@ -187,4 +237,5 @@
 
     </script>
 </body>
+
 </html>

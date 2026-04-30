@@ -1,51 +1,153 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Posture Checker - MediaPipe Tasks API</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; text-align: center; background-color: #f4f7f6; margin-top: 30px; }
-        .video-container { position: relative; display: inline-block; box-shadow: 0px 10px 20px rgba(0,0,0,0.2); border-radius: 12px; overflow: hidden; background-color: #000; }
-        video { width: 640px; height: 480px; transform: scaleX(-1); display: block; }
-        canvas { position: absolute; top: 0; left: 0; width: 640px; height: 480px; transform: scaleX(-1); }
-        #status-board { margin-top: 20px; padding: 15px 30px; border-radius: 8px; display: inline-block; font-size: 24px; font-weight: bold; }
-        .loading { background-color: #e0e0e0; color: #333; }
-        .good { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .bad { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .debug-info { margin-top: 10px; font-family: monospace; color: #555; }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            text-align: center;
+            background-color: #f4f7f6;
+            margin-top: 30px;
+        }
 
-        /* --- CSS CHO POPUP HIỆU CHUẨN --- */
+        .video-container {
+            position: relative;
+            display: inline-block;
+            box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            overflow: hidden;
+            background-color: #000;
+        }
+
+        video {
+            width: 640px;
+            height: 480px;
+            transform: scaleX(-1);
+            display: block;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 640px;
+            height: 480px;
+            transform: scaleX(-1);
+        }
+
+        #status-board {
+            margin-top: 20px;
+            padding: 15px 30px;
+            border-radius: 8px;
+            display: inline-block;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .loading {
+            background-color: #e0e0e0;
+            color: #333;
+        }
+
+        .good {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .bad {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .debug-info {
+            margin-top: 10px;
+            font-family: monospace;
+            color: #555;
+        }
+
+        /* POPUP */
         .popup-overlay {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(0, 0, 0, 0.6); /* Làm mờ camera phía sau */
-            display: flex; justify-content: center; align-items: center;
-            z-index: 9999; /* Đảm bảo nổi lên trên cùng */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
             transition: opacity 0.3s ease;
         }
+
         .popup-overlay.hidden {
             opacity: 0;
-            pointer-events: none; /* Không bấm được khi bị ẩn */
+            pointer-events: none;
         }
+
         .popup-content {
-            background: white; padding: 25px; border-radius: 12px;
-            width: 350px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            width: 350px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
         }
-        .popup-content h3 { margin-top: 0; color: #1f2937; }
-        .popup-status { margin: 15px 0; font-size: 15px; color: #4b5563; }
-        .popup-actions { display: flex; flex-direction: column; gap: 10px; }
+
+        .popup-content h3 {
+            margin-top: 0;
+            color: #1f2937;
+        }
+
+        .popup-status {
+            margin: 15px 0;
+            font-size: 15px;
+            color: #4b5563;
+        }
+
+        .popup-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
         .popup-actions button {
-            padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;
-            background: #e5e7eb; color: #374151; transition: 0.2s;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            background: #e5e7eb;
+            color: #374151;
+            transition: 0.2s;
         }
-        .popup-actions button:hover { background: #d1d5db; }
-        .popup-actions button.primary { background: #6366f1; color: white; }
-        .popup-actions button.primary:hover { background: #4f46e5; }
-        .popup-actions button:disabled { background: #9ca3af; cursor: not-allowed; }
+
+        .popup-actions button:hover {
+            background: #d1d5db;
+        }
+
+        .popup-actions button.primary {
+            background: #6366f1;
+            color: white;
+        }
+
+        .popup-actions button.primary:hover {
+            background: #4f46e5;
+        }
+
+        .popup-actions button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
     </style>
 </head>
-<body>
 
+<body>
     <h2>Hệ Thống Phân Tích Tư Thế Ngồi (Local Model)</h2>
 
     <div class="video-container">
@@ -55,22 +157,19 @@
 
     <div>
         <div id="status-board" class="loading">Đang tải Model từ ổ cứng...</div>
-        <div id="debug" class="debug-info">Distance (Mũi - Vai): 0.00</div>
+        <div id="debug" class="debug-info">Đang chờ dữ liệu...</div>
         <div id="mui" class="debug-info">Mũi (landmarks[0]) : 0.00</div>
         <div id="VT" class="debug-info">Vai trái (landmarks[11]) : 0.00</div>
         <div id="VP" class="debug-info">Vai phải (landmarks[12]) : 0.00</div>
-
     </div>
 
     <div id="calibrationPopup" class="popup-overlay">
         <div class="popup-content">
             <h3>Chào mừng trở lại! 👋</h3>
             <p style="font-size: 14px; color: #666;">Hôm nay bạn ngồi ở vị trí mới hay vị trí cũ?</p>
-
             <div id="popupStatus" class="popup-status">
-                Ngưỡng AI hiện tại: <strong id="currentThresholdDisplay" style="color: #2563eb;">0.40</strong>
+                Ngưỡng AI hiện tại: <strong id="currentThresholdDisplay" style="color: #2563eb;">0.54</strong>
             </div>
-
             <div class="popup-actions">
                 <button id="btnRecalibratePopup" class="primary" onclick="startPopupCalibration()">
                     🎯 Hiệu chuẩn lại chỗ ngồi (5s)
@@ -84,22 +183,15 @@
 
     <script type="module">
 
-        // --- Ứng dụng Web chạy ngầm + Cảnh báo đa phương tiện ---
-        // 1. Xin quyền hiển thị thông báo Desktop của Windows
         if (Notification.permission !== "denied") {
             Notification.requestPermission();
         }
 
-        // const beepSound = new Audio('./audio/Kho_Bau.wav');
         const beepSound = new Audio('./assets/ong_co_noi_may.mp3');
 
-        // 3. Các biến để quản lý thời gian gù lưng
-        let slouchStartTime = null; // Thời điểm bắt đầu gù lưng
-        let lastAlertTime = 0;      // Thời điểm phát cảnh báo gần nhất
-        // ----------------------------------
+        let slouchStartTime = null;
+        let lastAlertTime = 0;
 
-
-        // from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.mjs";
         import {
             PoseLandmarker,
             FilesetResolver,
@@ -111,46 +203,45 @@
         const canvasCtx = canvasElement.getContext('2d');
         const statusBoard = document.getElementById('status-board');
         const debugText = document.getElementById('debug');
-
-
         const noseText = document.getElementById('mui');
         const leftShoulderText = document.getElementById('VT');
         const rightShoulderText = document.getElementById('VP');
-
 
         let poseLandmarker = undefined;
         let lastVideoTime = -1;
         const drawingUtils = new DrawingUtils(canvasCtx);
 
-        // Biến module-scope để popup và vòng lặp AI dùng chung
-        let currentThreshold = 0.38;
+        // ----------------------------------------------------------------
+        // NGƯỠNG GÙ LƯNG
+        // normalizedDistance = khoảng cách Y (mũi→vai) / chiều rộng vai
+        // Ngồi thẳng thường ~0.6–0.8 tùy camera → default 0.54
+        // Sẽ được ghi đè sau khi calibrate
+        // ----------------------------------------------------------------
+        let currentThreshold = 0.54;
         let userInDb = JSON.parse(localStorage.getItem('currentUser'));
         if (userInDb && userInDb.threshold) {
             currentThreshold = userInDb.threshold;
+            document.getElementById('currentThresholdDisplay').innerText = userInDb.threshold;
         }
+
         window.addEventListener('storage', () => {
             const updatedUser = JSON.parse(localStorage.getItem('currentUser'));
             if (updatedUser && updatedUser.threshold) {
                 currentThreshold = updatedUser.threshold;
-                console.log("AI đã nhận được ngưỡng gù lưng mới:", currentThreshold);
+                console.log("AI nhận ngưỡng mới:", currentThreshold);
             }
         });
 
-        // --- LOGIC XỬ LÝ POPUP VÀ HIỆU CHUẨN TẠI CHỖ ---
+        // ----------------------------------------------------------------
+        // POPUP HIỆU CHUẨN
+        // ----------------------------------------------------------------
         let isPopupCalibrating = false;
         let popupCalibrationSamples = [];
 
-        // 1. Cập nhật số liệu cũ lên Popup khi vừa mở app
-        if (userInDb && userInDb.threshold) {
-            document.getElementById('currentThresholdDisplay').innerText = userInDb.threshold;
-        }
-
-        // 2. Hàm đóng Popup (Tương đương việc "Không có gì thay đổi")
         function closePopup() {
             document.getElementById('calibrationPopup').classList.add('hidden');
         }
 
-        // 3. Hàm bắt đầu hiệu chuẩn từ Popup
         function startPopupCalibration() {
             const statusDiv = document.getElementById('popupStatus');
             const btnKeep = document.getElementById('btnKeepOldPopup');
@@ -158,200 +249,192 @@
 
             isPopupCalibrating = true;
             popupCalibrationSamples = [];
-
-            btnKeep.style.display = 'none'; // Ẩn nút bỏ qua
-            btnRecal.disabled = true;       // Khóa nút hiệu chuẩn
+            btnKeep.style.display = 'none';
+            btnRecal.disabled = true;
 
             let countdown = 3;
             let timer = setInterval(() => {
-                statusDiv.innerHTML = `<span style="color:#ef4444; font-weight:bold;">Hãy ngồi thẳng! Bắt đầu sau: ${countdown}s</span>`;
+                statusDiv.innerHTML = `<span style="color:#ef4444;font-weight:bold;">Hãy ngồi thẳng! Bắt đầu sau: ${countdown}s</span>`;
                 countdown--;
-
                 if (countdown < 0) {
                     clearInterval(timer);
-                    statusDiv.innerHTML = `<span style="color:#10b981; font-weight:bold;">⚡ Đang lấy mẫu AI... (Giữ nguyên tư thế)</span>`;
-
-                    // Chạy lấy mẫu trong 5 giây
+                    statusDiv.innerHTML = `<span style="color:#10b981;font-weight:bold;">⚡ Đang lấy mẫu... (Giữ nguyên tư thế)</span>`;
                     setTimeout(() => { finishPopupCalibration(); }, 5000);
                 }
             }, 1000);
         }
 
-        // 4. Hàm chốt kết quả hiệu chuẩn
         function finishPopupCalibration() {
-            isPopupCalibrating = false; // Dừng thu thập
+            isPopupCalibrating = false;
 
-            if (popupCalibrationSamples.length > 0) {
-                const average = popupCalibrationSamples.reduce((a, b) => a + b) / popupCalibrationSamples.length;
-                const newThreshold = parseFloat((average * 0.85).toFixed(2));
-
-                // Cập nhật biến AI đang chạy ngầm
-                currentThreshold = newThreshold;
-
-                // Cập nhật LocalStorage
-                if (userInDb) {
-                    userInDb.threshold = newThreshold;
-                    localStorage.setItem('currentUser', JSON.stringify(userInDb));
-
-                    // Gọi API lưu xuống Database luôn
-                    fetch(`http://localhost:8080/api/users/${userInDb.id}/threshold`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(newThreshold)
-                    }).catch(e => console.log("Lỗi lưu DB ngầm:", e));
-                }
-
-                alert("Đã cập nhật ngưỡng mới: " + newThreshold);
-            } else {
-                alert("Lỗi: Camera không thấy rõ khuôn mặt!");
+            if (popupCalibrationSamples.length < 10) {
+                alert("Lỗi: Không đủ dữ liệu! Hãy đảm bảo camera thấy rõ đầu và vai của bạn.");
+                document.getElementById('btnKeepOldPopup').style.display = '';
+                document.getElementById('btnRecalibratePopup').disabled = false;
+                return;
             }
 
-            // Đóng popup sau khi xong
+            const average = popupCalibrationSamples.reduce((a, b) => a + b) / popupCalibrationSamples.length;
+
+            if (isNaN(average) || average <= 0) {
+                alert("Lỗi: Dữ liệu hiệu chuẩn không hợp lệ. Thử lại.");
+                document.getElementById('btnKeepOldPopup').style.display = '';
+                document.getElementById('btnRecalibratePopup').disabled = false;
+                return;
+            }
+
+            // Ngồi thẳng average ~0.6–0.8 → threshold ~0.51–0.68
+            const newThreshold = parseFloat((average * 0.85).toFixed(3));
+            currentThreshold = newThreshold;
+
+            const displayEl = document.getElementById('currentThresholdDisplay');
+            if (displayEl) displayEl.innerText = newThreshold;
+
+            if (userInDb) {
+                userInDb.threshold = newThreshold;
+                localStorage.setItem('currentUser', JSON.stringify(userInDb));
+
+                fetch(`http://localhost:8080/api/users/${userInDb.id}/threshold`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newThreshold)
+                }).catch(e => console.log("Lỗi lưu DB ngầm:", e));
+            }
+
+            alert("Đã cập nhật ngưỡng mới: " + newThreshold);
             closePopup();
         }
 
-        // Expose hàm popup ra window vì script là module
         window.closePopup = closePopup;
         window.startPopupCalibration = startPopupCalibration;
 
-        // 1. Khởi tạo Model
+        // ----------------------------------------------------------------
+        // KHỞI TẠO MODEL
+        // ----------------------------------------------------------------
         const createPoseLandmarker = async () => {
-            const vision = await FilesetResolver.forVisionTasks(
-                // "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm"
-                "./libs/mediapipe/wasm"
-            );
-            
+            const vision = await FilesetResolver.forVisionTasks("./libs/mediapipe/wasm");
             poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
                 baseOptions: {
-                    modelAssetPath: "./models/pose_landmarker_full.task", 
+                    modelAssetPath: "./models/pose_landmarker_full.task",
                     delegate: "GPU"
                 },
                 runningMode: "VIDEO",
                 numPoses: 1
             });
-            
             statusBoard.innerText = "Model đã sẵn sàng! Đang mở camera...";
             startCamera();
         };
 
-        // 2. Mở Webcam
-        function startCamera() {
-            navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
-                videoElement.srcObject = stream;
-                videoElement.addEventListener("loadeddata", predictWebcam);
-            });
+        function startCamera(retryCount = 0) {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then((stream) => {
+                    videoElement.srcObject = stream;
+                    videoElement.addEventListener("loadeddata", predictWebcam);
+                })
+                .catch((err) => {
+                    console.error("Lỗi camera:", err);
+                    if (retryCount < 3) {
+                        console.log(`Thử lại lần ${retryCount + 1}...`);
+                        setTimeout(() => startCamera(retryCount + 1), 1000);
+                    } else {
+                        statusBoard.innerText = "❌ Không thể mở camera. Hãy kiểm tra lại.";
+                        statusBoard.className = "bad";
+                    }
+                });
         }
 
-        // 3. Vòng lặp dự đoán và xử lý ảnh
+        // Dọn dẹp camera khi đóng/reload trang — tránh bị giữ camera
+        window.addEventListener('beforeunload', () => {
+            if (videoElement.srcObject) {
+                videoElement.srcObject.getTracks().forEach(track => track.stop());
+            }
+        });
+
+        // ----------------------------------------------------------------
+        // VÒNG LẶP CHÍNH
+        // ----------------------------------------------------------------
         async function predictWebcam() {
             canvasElement.width = videoElement.videoWidth;
             canvasElement.height = videoElement.videoHeight;
-            
-            let startTimeMs = performance.now();
-            
+
+            const startTimeMs = performance.now();
+
             if (lastVideoTime !== videoElement.currentTime) {
                 lastVideoTime = videoElement.currentTime;
-                
-                // Đưa frame hình vào nhận diện
+
                 poseLandmarker.detectForVideo(videoElement, startTimeMs, (result) => {
                     canvasCtx.save();
                     canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-                    
+
                     if (result.landmarks.length > 0) {
                         const landmarks = result.landmarks[0];
-                        
-                        // Vẽ chấm đỏ tại các khớp xương
-                        drawingUtils.drawLandmarks(landmarks, { radius: 3, color: '#FF0000' });
 
-                        //Vẽ các đường nối màu xanh giữa các khớp xương
+                        drawingUtils.drawLandmarks(landmarks, { radius: 3, color: '#FF0000' });
                         drawingUtils.drawConnectors(landmarks, PoseLandmarker.POSE_CONNECTIONS, { color: '#00FF00', lineWidth: 3 });
 
-                        // Logic tính toán gù lưng
                         const nose = landmarks[0];
                         const leftShoulder = landmarks[11];
                         const rightShoulder = landmarks[12];
 
-                        const midShoulderY = (leftShoulder.y + rightShoulder.y) / 2;
-                        const verticalDistance = Math.abs(midShoulderY - nose.y);
+                        // ------------------------------------------------
+                        // GÙ LƯNG
+                        // normalizedDistance = Y (mũi→trung điểm vai) / chiều rộng vai
+                        // Bất biến với khoảng cách camera
+                        // Giảm khi gù → so sánh với threshold
+                        // ------------------------------------------------
+                        const shoulderWidth = Math.abs(leftShoulder.x - rightShoulder.x);
 
-                        // Hút dữ liệu nếu Popup đang ra lệnh hiệu chuẩn
-                        if (isPopupCalibrating) {
-                            popupCalibrationSamples.push(verticalDistance);
-                        }
+                        if (shoulderWidth < 0.05) {
+                            // Người đang xoay ngang, bỏ qua frame này
+                            statusBoard.innerText = "↔️ Hãy nhìn thẳng vào camera";
+                            statusBoard.className = "loading";
+                        } else {
+                            const midShoulderY = (leftShoulder.y + rightShoulder.y) / 2;
+                            const normalizedDistance = Math.abs(nose.y - midShoulderY) / shoulderWidth;
 
-                        debugText.innerText = `Khoảng cách chuẩn hóa (Y): ${verticalDistance.toFixed(3)}`;
-                        noseText.innerText = `Mũi (landmarks[0]) : (x: ${nose.x.toFixed(3)}, y: ${nose.y.toFixed(3)})`;
-                        leftShoulderText.innerText = `Vai trái (landmarks[11]) : (x: ${leftShoulder.x.toFixed(3)}, y: ${leftShoulder.y.toFixed(3)})`;
-                        rightShoulderText.innerText = `Vai phải (landmarks[12]) : (x: ${rightShoulder.x.toFixed(3)}, y: ${rightShoulder.y.toFixed(3)})`;
-
-
-                        // Ngưỡng kiểm tra gù lưng
-                        // const THRESHOLD = 0.38; // Điều chỉnh dựa trên thực tế
-                        
-                        // if (verticalDistance < THRESHOLD) {
-                        //     // statusBoard.innerText = "⚠️ BẠN ĐANG GÙ LƯNG! HÃY NGỒI THẲNG LÊN!";
-                        //     // statusBoard.className = "bad";
-                            
-                        // } else {
-                        //     statusBoard.innerText = "✅ Tư thế tốt. Hãy duy trì nhé!";
-                        //     statusBoard.className = "good";
-                        // }
-
-
-                        // currentThreshold và userInDb được khai báo ở module-scope phía trên
-
-                        // ---- LẮNG NGHE YÊU CẦU HIỆU CHUẨN ----
-                        const calibrationStatus = localStorage.getItem('calibrationStatus');
-
-                        if (calibrationStatus === 'START') {
-                            // 1. Lấy mảng dữ liệu đang lưu tạm ra (nếu chưa có thì tạo mảng rỗng)
-                            let samples = JSON.parse(localStorage.getItem('calibrationData') || '[]');
-                            
-                            // 2. Nhét thêm giá trị khoảng cách hiện tại vào mảng
-                            // Chỉ lấy giới hạn khoảng 150-200 mẫu (tương đương 5 giây chạy 30fps) để tránh tràn bộ nhớ
-                            if (samples.length < 200) {
-                                samples.push(verticalDistance);
-                                
-                                // 3. Lưu ngược lại lên LocalStorage để cửa sổ Settings lấy ra tính toán
-                                localStorage.setItem('calibrationData', JSON.stringify(samples));
-                                
-                                console.log("Đang lấy mẫu hiệu chuẩn: ", verticalDistance);
+                            // Thu mẫu calibrate
+                            if (isPopupCalibrating) {
+                                popupCalibrationSamples.push(normalizedDistance);
                             }
-                        }
+                            const calibrationStatus = localStorage.getItem('calibrationStatus');
+                            if (calibrationStatus === 'START') {
+                                let samples = JSON.parse(localStorage.getItem('calibrationData') || '[]');
+                                if (samples.length < 200) {
+                                    samples.push(normalizedDistance);
+                                    localStorage.setItem('calibrationData', JSON.stringify(samples));
+                                }
+                            }
 
+                            // DEBUG
+                            debugText.innerText = `Khoảng cách mũi và vai: ${normalizedDistance.toFixed(3)} (ngưỡng: ${currentThreshold})`;
+                            noseText.innerText = `Mũi (0)       : (x: ${nose.x.toFixed(3)}, y: ${nose.y.toFixed(3)})`;
+                            leftShoulderText.innerText = `Vai trái (11) : (x: ${leftShoulder.x.toFixed(3)}, y: ${leftShoulder.y.toFixed(3)})`;
+                            rightShoulderText.innerText = `Vai phải (12) : (x: ${rightShoulder.x.toFixed(3)}, y: ${rightShoulder.y.toFixed(3)})`;
 
-                        // --- LOGIC BỘ ĐẾM 15 GIÂY ---
-                        if (verticalDistance < currentThreshold) {
-                            statusBoard.innerText = "⚠️ BẠN ĐANG GÙ LƯNG!";
-                            statusBoard.className = "bad";
+                            // ------------------------------------------------
+                            // PHÁN ĐOÁN
+                            // ------------------------------------------------
+                            const isHunchback = normalizedDistance < currentThreshold;
 
-                            // 1. Nếu vừa mới bắt đầu gù -> Ghi lại thời gian hiện tại
-                            if (slouchStartTime === null) {
-                                slouchStartTime = Date.now(); 
-                            } 
-                            // 2. Nếu đang gù tiếp -> Tính xem đã gù được bao nhiêu giây
-                            else {
-                                let slouchDuration = (Date.now() - slouchStartTime) / 1000; // Đổi ra giây
-                                debugText.innerText = `Khoảng cách: ${verticalDistance.toFixed(3)} | Gù liên tục: ${slouchDuration.toFixed(1)} giây`;
+                            if (isHunchback) {
+                                statusBoard.innerText = "⚠️ BẠN ĐANG GÙ LƯNG!";
+                                statusBoard.className = "bad";
 
-                                // 3. Nếu gù liên tục QUÁ 15 GIÂY
-                                if (slouchDuration >= 15) {
-                                    
-                                    // Kiểm tra xem lần cảnh báo trước cách đây đủ 5 giây chưa (để không bị kêu réo liên tục)
-                                    if (Date.now() - lastAlertTime > 5000) {
-                                        
-                                        // Phát tiếng Bíp
-                                        beepSound.play().catch(e => console.log("Lỗi phát âm thanh (cần click vào trang web 1 lần để trình duyệt cho phép phát tiếng)"));
-                                        
-                                        // Đẩy thông báo ra ngoài màn hình Windows
+                                if (slouchStartTime === null) {
+                                    slouchStartTime = Date.now();
+                                } else {
+                                    const slouchDuration = (Date.now() - slouchStartTime) / 1000;
+                                    debugText.innerText += ` | Liên tục: ${slouchDuration.toFixed(1)}s`;
+
+                                    if (slouchDuration >= 15 && Date.now() - lastAlertTime > 5000) {
+                                        beepSound.play().catch(e => console.log("Lỗi phát âm thanh:", e));
+
                                         if (Notification.permission === "granted") {
-                                            new Notification("Nhắc nhở từ Trợ lý AI", { 
-                                                body: "Bạn đã gù lưng 15 giây rồi, ngồi thẳng lên nào!" 
+                                            new Notification("Nhắc nhở từ Trợ lý AI", {
+                                                body: "Bạn đã gù lưng 15 giây rồi, ngồi thẳng lên nào!"
                                             });
                                         }
 
-
-                                        // --- GỌI API LƯU XUỐNG SPRING BOOT ---
                                         if (userInDb && userInDb.id) {
                                             fetch('http://localhost:8080/api/logs', {
                                                 method: 'POST',
@@ -360,31 +443,24 @@
                                                     userId: userInDb.id,
                                                     warningType: "GU_LUNG",
                                                     durationSeconds: Math.floor(slouchDuration),
-                                                    distanceValue: verticalDistance
+                                                    distanceValue: normalizedDistance
                                                 })
                                             })
-                                            .then(response => console.log("Đã gửi DB thành công cho User:", userInDb.username))
-                                            .catch(error => console.error("Lỗi gọi API:", error));
+                                                .then(() => console.log("Đã gửi DB thành công"))
+                                                .catch(error => console.error("Lỗi gọi API:", error));
                                         }
-                                        // -------------------------------------
 
-
-
-                                        // Cập nhật lại thời gian vừa cảnh báo
                                         lastAlertTime = Date.now();
                                     }
                                 }
+                            } else {
+                                beepSound.pause();
+                                beepSound.currentTime = 0;
+                                slouchStartTime = null;
+                                statusBoard.innerText = "✅ Tư thế tốt. Hãy duy trì nhé!";
+                                statusBoard.className = "good";
                             }
-                        } else {
-                            // NẾU NGỒI THẲNG -> RESET MỌI THỨ VỀ NHƯ CŨ
-                            beepSound.pause();
-                            beepSound.currentTime = 0;
-                            slouchStartTime = null; // Xóa bộ đếm thời gian
-                            statusBoard.innerText = "✅ Tư thế tốt. Hãy duy trì nhé!";
-                            statusBoard.className = "good";
-                            debugText.innerText = `Khoảng cách: ${verticalDistance.toFixed(3)}`;
                         }
-
 
 
                     }
@@ -395,25 +471,17 @@
         }
 
         createPoseLandmarker();
+    </script>
 
-
-        // Sử dụng thư viện electron để nhận lệnh từ Main Process
-        // Nếu bạn chưa có require('electron'), hãy thêm vào đầu script
+    <script>
         const { ipcRenderer } = require('electron');
-
         ipcRenderer.on('logout-command', () => {
-            // 1. Xóa sạch dấu vết user
             localStorage.removeItem('currentUser');
-            
-            // 2. Chuyển hướng về trang login
             window.location.href = 'login.html';
-            
-            // 3. Hiển thị lại cửa sổ để user biết đã đăng xuất thành công
-            // (Lệnh này có thể gọi thông qua ipcRenderer gửi ngược lại Main hoặc đơn giản là để window.show())
             console.log("Đã đăng xuất thành công!");
         });
     </script>
 
-
 </body>
+
 </html>
