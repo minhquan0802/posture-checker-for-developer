@@ -1,28 +1,52 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cài Đặt & Hiệu Chuẩn</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; color: #333; padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; }
-        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        h2 { margin-top: 0; color: #1f2937; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f3f4f6;
+            color: #333;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #1f2937;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 10px;
+        }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="card">
             <h2>🎯 Hiệu Chuẩn Tự Động</h2>
             <p>Ngồi thẳng lưng trước camera và bấm nút để AI học tư thế chuẩn của bạn.</p>
-            
+
             <div id="calibrationStatus" style="font-weight: bold; color: #2563eb; margin: 10px 0;">
                 Trạng thái: Sẵn sàng
             </div>
-            
-            <button id="btnCalibrate" onclick="startCalibration()" 
-                    style="background: #6366f1; color: white; padding: 12px; border: none; border-radius: 5px; cursor: pointer; width: 100%;">
+
+            <button id="btnCalibrate"
+                style="background: #6366f1; color: white; padding: 12px; border: none; border-radius: 5px; cursor: pointer; width: 100%;">
                 Bắt đầu hiệu chuẩn (5 giây)
             </button>
         </div>
@@ -30,13 +54,18 @@
         <div class="card">
             <h2>⚙️ Cài Đặt Cá Nhân</h2>
             <div style="margin-top: 15px;">
-                <label style="font-weight: bold;">Ngưỡng nhận diện gù lưng: <span id="thresholdDisplay" style="color: #2563eb; font-size: 20px;">0.40</span></label>
+                <label style="font-weight: bold;">Ngưỡng nhận diện gù lưng: <span id="thresholdDisplay"
+                        style="color: #2563eb; font-size: 20px;">0.40</span></label>
                 <br><br>
-                <input type="range" id="thresholdSlider" min="0.10" max="0.80" step="0.01" style="width: 100%; cursor: pointer;">
+                <input type="range" id="thresholdSlider" min="0.10" max="0.80" step="0.01"
+                    style="width: 100%; cursor: pointer;">
                 <p style="font-size: 13px; color: #666; margin-top: 8px;">
-                    <i>* Gợi ý: Kéo sang trái nếu ngồi xa camera. Kéo sang phải nếu ngồi gần. (Số càng nhỏ càng nhạy)</i>
+                    <i>* Gợi ý: Kéo sang trái nếu ngồi xa camera. Kéo sang phải nếu ngồi gần. (Số càng nhỏ càng
+                        nhạy)</i>
                 </p>
-                <button onclick="saveThreshold()" style="background: #10b981; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-top: 15px; font-weight: bold;">💾 Lưu Cài Đặt</button>
+                <button id="BtnsaveThreshold"
+                    style="background: #10b981; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-top: 15px; font-weight: bold;">💾
+                    Lưu Cài Đặt</button>
             </div>
         </div>
     </div>
@@ -46,7 +75,7 @@
         document.addEventListener('DOMContentLoaded', () => {
 
             const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-            
+
             // KIỂM TRA ĐĂNG NHẬP
             if (!currentUser || !currentUser.id) {
                 alert("Phiên làm việc hết hạn, vui lòng đăng nhập lại!");
@@ -62,23 +91,23 @@
             function startCalibration() {
                 const statusBody = document.getElementById('calibrationStatus');
                 const btn = document.getElementById('btnCalibrate');
-                
+
                 isCalibrating = true;
                 calibrationSamples = [];
                 btn.disabled = true;
-                
+
                 // Gửi tín hiệu sang index.html qua localStorage để index.html bắt đầu gửi data
                 localStorage.setItem('calibrationStatus', 'START');
-                
+
                 let countdown = 3;
                 let timer = setInterval(() => {
                     statusBody.innerText = `Hãy ngồi thẳng! Bắt đầu sau: ${countdown}s`;
                     countdown--;
-                    
+
                     if (countdown < 0) {
                         clearInterval(timer);
                         statusBody.innerText = "⚡ Đang lấy mẫu... (Giữ nguyên tư thế)";
-                        
+
                         setTimeout(() => { finishCalibration(); }, 5000);
                     }
                 }, 1000);
@@ -88,26 +117,26 @@
                 isCalibrating = false;
                 const btn = document.getElementById('btnCalibrate');
                 const statusBody = document.getElementById('calibrationStatus');
-                
+
                 // Lấy cục data mẫu mà index.html vừa lưu vào localStorage
                 const samplesStr = localStorage.getItem('calibrationData');
                 if (samplesStr) {
                     calibrationSamples = JSON.parse(samplesStr);
                 }
-                
+
                 if (calibrationSamples.length > 0) {
                     const average = calibrationSamples.reduce((a, b) => a + b) / calibrationSamples.length;
                     const suggestedThreshold = parseFloat((average * 0.85).toFixed(2));
-                    
+
                     document.getElementById('thresholdSlider').value = suggestedThreshold;
                     document.getElementById('thresholdDisplay').innerText = suggestedThreshold;
                     statusBody.innerText = `✅ Xong! Ngưỡng đề xuất: ${suggestedThreshold}`;
-                    
-                    saveThreshold(suggestedThreshold); 
+
+                    saveThreshold(suggestedThreshold);
                 } else {
                     statusBody.innerText = "❌ Lỗi: Không nhận diện được khuôn mặt.";
                 }
-                
+
                 // Dọn dẹp cờ hiệu chuẩn
                 localStorage.removeItem('calibrationStatus');
                 localStorage.removeItem('calibrationData');
@@ -120,7 +149,7 @@
                 document.getElementById('thresholdDisplay').innerText = currentUser.threshold;
             }
 
-            document.getElementById('thresholdSlider').addEventListener('input', function() {
+            document.getElementById('thresholdSlider').addEventListener('input', function () {
                 document.getElementById('thresholdDisplay').innerText = this.value;
             });
 
@@ -133,15 +162,29 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(newThreshold)
                 })
-                .then(res => {
-                    if (!res.ok) throw new Error("Lỗi cập nhật Server");
-                    currentUser.threshold = newThreshold;
-                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                    if(val === null) alert("Đã lưu ngưỡng mới thành công!"); // Chỉ báo alert nếu user tự bấm nút
-                })
-                .catch(err => alert(err.message));
+                    .then(res => {
+                        if (!res.ok) throw new Error("Lỗi cập nhật Server");
+                        currentUser.threshold = newThreshold;
+                        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                        if (val === null) alert("Đã lưu ngưỡng mới thành công!"); // Chỉ báo alert nếu user tự bấm nút
+                    })
+                    .catch(err => alert(err.message));
+            }
+
+            const btnCalibrate = document.getElementById('btnCalibrate');
+            if (btnCalibrate) {
+                btnCalibrate.addEventListener('click', startCalibration);
+            }
+
+            const btnSaveThreshold = document.getElementById('BtnsaveThreshold');
+            if (btnSaveThreshold) {
+                // Bọc trong () => để đảm bảo không truyền tham số rác vào hàm
+                btnSaveThreshold.addEventListener('click', () => {
+                    saveThreshold(); 
+                });
             }
         });
     </script>
 </body>
+
 </html>
