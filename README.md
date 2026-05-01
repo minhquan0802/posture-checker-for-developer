@@ -102,7 +102,7 @@ Posture-Checker/
 │   ├── assets/              # Âm thanh cảnh báo
 │   ├── libs/mediapipe/      # MediaPipe library (offline)
 │   ├── models/              # File trọng số AI (.task)
-│   ├── index_final1.html    # Màn hình nhận diện tư thế chính
+│   ├── index.html           # Màn hình nhận diện tư thế chính
 │   ├── login.html           # Màn hình đăng nhập
 │   ├── report.html          # Màn hình báo cáo thống kê
 │   ├── settings.html        # Màn hình cài đặt & hiệu chuẩn
