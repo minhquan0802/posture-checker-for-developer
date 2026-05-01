@@ -30,15 +30,38 @@ Trước khi bắt đầu, hãy đảm bảo máy tính đã cài đặt:
 
 ## ⚙️ Hướng dẫn Cài đặt & Khởi chạy
 
-### Bước 1 — Khởi chạy Backend & Database
+### ⚡ Khởi chạy nhanh (Khuyên dùng)
 
-Backend đã được đóng gói hoàn toàn bằng Docker Compose. Chỉ cần **1 lệnh duy nhất** để khởi chạy cả Server lẫn Database.
+> Áp dụng cho lần chạy **từ lần thứ 2 trở đi**, sau khi đã cài đặt xong ở bước dưới.
+
+Dự án cung cấp 2 file batch để khởi động và tắt toàn bộ hệ thống chỉ bằng **1 cú nhấp đúp**:
+
+| File | Chức năng |
+|---|---|
+| `Start_App.bat` | Khởi động Backend (Docker) + Frontend (Electron) |
+| `Stop_App.bat` | Tắt toàn bộ hệ thống |
+
+> ⚠️ Chạy file `.bat` bằng **Run as Administrator** để tránh lỗi quyền truy cập.
+
+---
+
+### Bước 1 — Cài đặt lần đầu (Frontend)
 
 ```bash
-# Di chuyển vào thư mục server
-cd server
+cd client
+npm install
+```
 
-# Khởi chạy toàn bộ hệ thống
+Chỉ cần chạy **một lần duy nhất** để tải các thư viện Node.js cần thiết.
+
+---
+
+### Bước 2 — Khởi chạy Backend & Database
+
+Backend đã được đóng gói hoàn toàn bằng Docker Compose:
+
+```bash
+cd server
 docker-compose up -d --build
 ```
 
@@ -55,16 +78,10 @@ Khi thấy dòng `Started ServerApplication` là Backend đã sẵn sàng tại 
 
 ---
 
-### Bước 2 — Khởi chạy Frontend (Ứng dụng Camera AI)
+### Bước 3 — Khởi chạy Frontend (Ứng dụng Camera AI)
 
 ```bash
-# Di chuyển vào thư mục client
 cd client
-
-# Cài đặt các thư viện cần thiết (chỉ cần chạy lần đầu)
-npm install
-
-# Khởi chạy ứng dụng
 npm start
 ```
 
@@ -98,6 +115,9 @@ Nhấp đúp vào file `.exe` để cài đặt ứng dụng.
 
 ```
 Posture-Checker/
+├── Start_App.bat            # Khởi động toàn bộ hệ thống (1 click)
+├── Stop_App.bat             # Tắt toàn bộ hệ thống (1 click)
+│
 ├── client/                  # Electron Desktop App (Frontend + AI)
 │   ├── assets/              # Âm thanh cảnh báo
 │   ├── libs/mediapipe/      # MediaPipe library (offline)
@@ -133,5 +153,9 @@ Trong đó:
 Khi `normalizedDistance < threshold` → **Phát hiện gù lưng** → Cảnh báo âm thanh + thông báo Windows sau 15 giây liên tục.
 
 ---
-<img width="1446" height="1712" alt="image" src="https://github.com/user-attachments/assets/d8254049-6a40-4baa-abc7-e4464831ebae" />
 
+## 🧑‍💻 Tác giả
+
+**Nguyễn Hồng Minh Quân** — Sinh viên năm 4, Ngành Kỹ thuật Phần mềm  
+Trường Đại học Công nghệ Sài Gòn — Khoa Công nghệ Thông tin  
+MSSV: DH52201291
