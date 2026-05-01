@@ -1,5 +1,6 @@
 # Bỏ qua thư mục chứa thư viện (cực kỳ nặng và nhiều file nhỏ rác)
 node_modules/
+dist/
 
 # Bỏ qua các file mô hình AI cục bộ
 *.tflite
