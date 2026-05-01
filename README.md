@@ -32,7 +32,7 @@ Trước khi bắt đầu, hãy đảm bảo máy tính đã cài đặt:
 
 ### ⚡ Khởi chạy nhanh (Khuyên dùng)
 
-> Áp dụng cho lần chạy **từ lần thứ 2 trở đi**, sau khi đã cài đặt xong ở bước dưới.
+> Áp dụng cho lần chạy **từ lần thứ 2 trở đi**, sau khi đã hoàn thành Bước 1 (cài đặt npm install) và chạy thành công lần đầu, từ lần thứ 2 trở đi chỉ cần nhấp đúp vào Start_App.bat để khởi động toàn bộ hệ thống.
 
 Dự án cung cấp 2 file batch để khởi động và tắt toàn bộ hệ thống chỉ bằng **1 cú nhấp đúp**:
 
@@ -153,9 +153,3 @@ Trong đó:
 Khi `normalizedDistance < threshold` → **Phát hiện gù lưng** → Cảnh báo âm thanh + thông báo Windows sau 15 giây liên tục.
 
 ---
-
-## 🧑‍💻 Tác giả
-
-**Nguyễn Hồng Minh Quân** — Sinh viên năm 4, Ngành Kỹ thuật Phần mềm  
-Trường Đại học Công nghệ Sài Gòn — Khoa Công nghệ Thông tin  
-MSSV: DH52201291
