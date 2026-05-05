@@ -149,8 +149,7 @@
             const user = document.getElementById('loginUsername').value;
             const pass = document.getElementById('loginPassword').value;
 
-            // Gọi API bằng fetch
-            fetch('http://localhost:8080/api/users/login', {
+            fetch('https://posture-checker-for-developer.onrender.com/api/users/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: user, password: pass })
@@ -185,7 +184,8 @@
             }
 
             // Gọi API Đăng Ký
-            fetch('http://localhost:8080/api/users/register', {
+            // fetch('http://localhost:8080/api/users/register', {
+            fetch('https://posture-checker-for-developer.onrender.com/api/users/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: user, password: pass })

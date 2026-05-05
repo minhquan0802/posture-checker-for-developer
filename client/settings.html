@@ -157,7 +157,7 @@
                 if (!currentUser || !currentUser.id) return;
                 const newThreshold = val !== null ? val : parseFloat(document.getElementById('thresholdSlider').value);
 
-                fetch(`http://localhost:8080/api/users/${currentUser.id}/threshold`, {
+                fetch(`https://posture-checker-for-developer.onrender.com/api/users/${currentUser.id}/threshold`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(newThreshold)

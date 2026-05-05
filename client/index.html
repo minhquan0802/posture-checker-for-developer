@@ -294,7 +294,8 @@
                 userInDb.threshold = newThreshold;
                 localStorage.setItem('currentUser', JSON.stringify(userInDb));
 
-                fetch(`http://localhost:8080/api/users/${userInDb.id}/threshold`, {
+                // fetch(`http://localhost:8080/api/users/${userInDb.id}/threshold`, {
+                fetch(`https://posture-checker-for-developer.onrender.com/api/users/${userInDb.id}/threshold`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(newThreshold)
@@ -436,7 +437,8 @@
                                         }
 
                                         if (userInDb && userInDb.id) {
-                                            fetch('http://localhost:8080/api/logs', {
+                                            // fetch('http://localhost:8080/api/logs', {
+                                            fetch('https://posture-checker-for-developer.onrender.com/api/logs', {
                                                 method: 'POST',
                                                 headers: { 'Content-Type': 'application/json' },
                                                 body: JSON.stringify({

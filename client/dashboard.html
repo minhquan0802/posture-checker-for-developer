@@ -70,7 +70,7 @@
             const userId = currentUser.id;
 
             // 2. Gọi API lấy thống kê hôm nay
-            fetch(`http://localhost:8080/api/logs/today/${userId}`)
+            fetch(`https://posture-checker-for-developer.onrender.com/api/logs/today/${userId}`)
                 .then(res => res.json())
                 .then(data => {
                     document.getElementById('totalWarnings').innerText = data.totalWarnings;
@@ -79,7 +79,7 @@
                 .catch(err => console.error("Lỗi lấy thống kê:", err));
 
             // 3. Gọi API lấy danh sách 20 lần gần nhất
-            fetch(`http://localhost:8080/api/logs/recent/${userId}`)
+            fetch(`https://posture-checker-for-developer.onrender.com/api/logs/recent/${userId}`)
                 .then(res => res.json())
                 .then(data => {
                     const tbody = document.getElementById('logTableBody');
