@@ -187,9 +187,61 @@
             Notification.requestPermission();
         }
 
-        const beepSound = new Audio('./assets/ong_co_noi_may.mp3');
+        // 1. Tải 3 file âm thanh của bạn (Nhớ đổi lại đường dẫn cho đúng với thư mục dự án)
+        const audioLevel1 = new Audio('./assets/canhbao_lan1.mp3');
+        const audioLevel2 = new Audio('./assets/canhbao_lan2.mp3');
+        const audioLevel3 = new Audio('./assets/canhbao_lan3.mp3');
 
-        let slouchStartTime = null;
+        // 2. Các biến dùng để bấm giờ và cắm cờ
+        let slouchStartTime = null; // Ghi nhớ thời điểm bắt đầu gù
+        let hasPlayedLevel1 = false; // Cờ đánh dấu đã phát mức 1 chưa
+        let hasPlayedLevel2 = false; // Cờ đánh dấu đã phát mức 2 chưa
+        let hasPlayedLevel3 = false; // Cờ đánh dấu đã phát mức 3 chưa
+
+
+        // 3. Hàm này sẽ được gọi liên tục khi phát hiện gù, nó sẽ kiểm tra đã đến mốc thời gian nào và phát âm thanh tương ứng
+        function triggerSlouchWarning() {
+            // Nếu đây là khoảnh khắc ĐẦU TIÊN phát hiện gù, bắt đầu bấm giờ!
+            if (slouchStartTime === null) {
+                slouchStartTime = Date.now();
+            }
+
+            // Tính xem người dùng đã gù được bao nhiêu giây rồi
+            const slouchDurationSeconds = Math.floor((Date.now() - slouchStartTime) / 1000);
+
+            // MỨC 1: Đạt 15s và CHƯA từng phát audio mức 1
+            if (slouchDurationSeconds >= 15 && slouchDurationSeconds < 30 && !hasPlayedLevel1) {
+                audioLevel1.play();
+                hasPlayedLevel1 = true; // Cắm cờ: Đã phát rồi, đừng phát lại nữa!
+            }
+            // MỨC 2: Đạt 30s và CHƯA từng phát audio mức 2
+            else if (slouchDurationSeconds >= 30 && slouchDurationSeconds < 45 && !hasPlayedLevel2) {
+                audioLevel2.play();
+                hasPlayedLevel2 = true;
+            }
+            // MỨC 3: Đạt 45s và CHƯA từng phát audio mức 3
+            else if (slouchDurationSeconds >= 45 && !hasPlayedLevel3) {
+                audioLevel3.play();
+                hasPlayedLevel3 = true;
+            }
+        }
+
+        // 4. Hàm này sẽ được gọi khi người dùng ngồi thẳng trở lại, nó sẽ reset mọi thứ về ban đầu để sẵn sàng cho lần gù tiếp theo
+        function resetPostureStatus() {
+            // Người dùng ngồi thẳng -> Reset mọi thứ về số 0
+            slouchStartTime = null;
+            hasPlayedLevel1 = false;
+            hasPlayedLevel2 = false;
+            hasPlayedLevel3 = false;
+
+            // (Tùy chọn) Tắt luôn âm thanh nếu nó đang rên rỉ dở dang
+            audioLevel1.pause(); audioLevel1.currentTime = 0;
+            audioLevel2.pause(); audioLevel2.currentTime = 0;
+            audioLevel3.pause(); audioLevel3.currentTime = 0;
+            statusBoard.innerText = "✅ Tư thế tốt. Hãy duy trì nhé!";
+            statusBoard.className = "good";
+        }
+
         let lastAlertTime = 0;
 
         import {
@@ -421,46 +473,44 @@
                                 statusBoard.innerText = "⚠️ BẠN ĐANG GÙ LƯNG!";
                                 statusBoard.className = "bad";
 
+                                // Bắt đầu bấm giờ
                                 if (slouchStartTime === null) {
                                     slouchStartTime = Date.now();
                                 } else {
                                     const slouchDuration = (Date.now() - slouchStartTime) / 1000;
                                     debugText.innerText += ` | Liên tục: ${slouchDuration.toFixed(1)}s`;
 
-                                    if (slouchDuration >= 15 && Date.now() - lastAlertTime > 5000) {
-                                        beepSound.play().catch(e => console.log("Lỗi phát âm thanh:", e));
+                                    triggerSlouchWarning(slouchDuration, normalizedDistance);
+                                    // if (slouchDuration >= 15 && Date.now() - lastAlertTime > 5000) {
+                                    //     beepSound.play().catch(e => console.log("Lỗi phát âm thanh:", e));
 
-                                        if (Notification.permission === "granted") {
-                                            new Notification("Nhắc nhở từ Trợ lý AI", {
-                                                body: "Bạn đã gù lưng 15 giây rồi, ngồi thẳng lên nào!"
-                                            });
-                                        }
+                                    //     if (Notification.permission === "granted") {
+                                    //         new Notification("Nhắc nhở từ Trợ lý AI", {
+                                    //             body: "Bạn đã gù lưng 15 giây rồi, ngồi thẳng lên nào!"
+                                    //         });
+                                    //     }
 
-                                        if (userInDb && userInDb.id) {
-                                            // fetch('http://localhost:8080/api/logs', {
-                                            fetch('https://posture-checker-for-developer.onrender.com/api/logs', {
-                                                method: 'POST',
-                                                headers: { 'Content-Type': 'application/json' },
-                                                body: JSON.stringify({
-                                                    userId: userInDb.id,
-                                                    warningType: "GU_LUNG",
-                                                    durationSeconds: Math.floor(slouchDuration),
-                                                    distanceValue: normalizedDistance
-                                                })
-                                            })
-                                                .then(() => console.log("Đã gửi DB thành công"))
-                                                .catch(error => console.error("Lỗi gọi API:", error));
-                                        }
+                                    //     if (userInDb && userInDb.id) {
+                                    //         // fetch('http://localhost:8080/api/logs', {
+                                    //         fetch('https://posture-checker-for-developer.onrender.com/api/logs', {
+                                    //             method: 'POST',
+                                    //             headers: { 'Content-Type': 'application/json' },
+                                    //             body: JSON.stringify({
+                                    //                 userId: userInDb.id,
+                                    //                 warningType: "GU_LUNG",
+                                    //                 durationSeconds: Math.floor(slouchDuration),
+                                    //                 distanceValue: normalizedDistance
+                                    //             })
+                                    //         })
+                                    //             .then(() => console.log("Đã gửi DB thành công"))
+                                    //             .catch(error => console.error("Lỗi gọi API:", error));
+                                    //     }
 
-                                        lastAlertTime = Date.now();
-                                    }
+                                    //     lastAlertTime = Date.now();
+                                    // }
                                 }
                             } else {
-                                beepSound.pause();
-                                beepSound.currentTime = 0;
-                                slouchStartTime = null;
-                                statusBoard.innerText = "✅ Tư thế tốt. Hãy duy trì nhé!";
-                                statusBoard.className = "good";
+                                resetPostureStatus();
                             }
                         }
 
