@@ -88,7 +88,8 @@
                     tbody.innerHTML = ''; 
                     
                     data.forEach(log => {
-                        const dateObj = new Date(log.createdAt);
+                        // const dateObj = new Date(log.createdAt);
+                        const dateObj = new Date(log.createdAt + 'Z');
                         const timeString = dateObj.toLocaleTimeString('vi-VN');
                         const dateString = dateObj.toLocaleDateString('vi-VN');
                         
