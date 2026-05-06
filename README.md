@@ -11,103 +11,30 @@
 |---|---|
 | **Frontend (Client)** | HTML, CSS, JavaScript, ElectronJS, MediaPipe Pose Landmarker |
 | **Backend (Server)** | Java 21, Spring Boot, Spring Data JPA, Hibernate |
-| **Database** | MySQL 8 |
-| **Đóng gói & Triển khai** | Docker, Docker Compose, Electron-builder |
+| **Database** | MySQL 8 (Aiven Cloud) |
+| **Triển khai** | Render (Backend), Electron-builder (Frontend) |
 
 ---
 
-## 📋 Yêu cầu hệ thống
+## 📦 Tải & Cài đặt ứng dụng
 
-Trước khi bắt đầu, hãy đảm bảo máy tính đã cài đặt:
+Tải file cài đặt Windows tại: **[Releases](https://github.com/minhquan0802/Posture-Checker-for-Developer/releases/tag/v1.0.0)**
 
-- **[Docker Desktop](https://www.docker.com/products/docker-desktop/)** — Dùng để chạy Server và Database
-- **[Node.js LTS](https://nodejs.org/)** — Dùng để chạy và đóng gói ứng dụng giao diện
-- **[Java 21](https://adoptium.net/) + Maven** *(Tùy chọn)* — Nếu muốn tự biên dịch lại file `.jar`
+**Yêu cầu:**
+- Windows 10/11
+- Webcam
 
-> ⚠️ **Quan trọng:** Hãy **tắt** các dịch vụ MySQL đang chạy trên máy (XAMPP, WAMP, MySQL Workbench...) trước khi chạy Docker để tránh xung đột cổng `3306`.
-
----
-
-## ⚙️ Hướng dẫn Cài đặt & Khởi chạy
-
-### ⚡ Khởi chạy nhanh (Khuyên dùng)
-
-> Áp dụng cho lần chạy **từ lần thứ 2 trở đi**, sau khi đã hoàn thành Bước 1 (cài đặt npm install) và chạy thành công lần đầu, từ lần thứ 2 trở đi chỉ cần nhấp đúp vào Start_App.bat để khởi động toàn bộ hệ thống.
-
-Dự án cung cấp 2 file batch để khởi động và tắt toàn bộ hệ thống chỉ bằng **1 cú nhấp đúp**:
-
-| File | Chức năng |
-|---|---|
-| `Start_App.bat` | Khởi động Backend (Docker) + Frontend (Electron) |
-| `Stop_App.bat` | Tắt toàn bộ hệ thống |
-
-> ⚠️ Chạy file `.bat` bằng **Run as Administrator** để tránh lỗi quyền truy cập.
+Nhấp đúp vào file `.exe` → cài đặt → mở app và sử dụng. Không cần cài thêm bất kỳ phần mềm nào khác.
 
 ---
 
-### Bước 1 — Cài đặt lần đầu (Frontend)
+## 🚀 Hướng dẫn sử dụng
 
-```bash
-cd client
-npm install
-```
-
-Chỉ cần chạy **một lần duy nhất** để tải các thư viện Node.js cần thiết.
-
----
-
-### Bước 2 — Khởi chạy Backend & Database
-
-Backend đã được đóng gói hoàn toàn bằng Docker Compose:
-
-```bash
-cd server
-docker-compose up -d --build
-```
-
-> Lần chạy đầu tiên sẽ mất khoảng **1–2 phút** để tải image MySQL và biên dịch Spring Boot.  
-> Spring Boot sẽ tự động tạo cấu trúc bảng trong Database khi khởi động.
-
-**Kiểm tra Backend đã chạy thành công chưa:**
-
-```bash
-docker-compose logs -f spring-backend
-```
-
-Khi thấy dòng `Started ServerApplication` là Backend đã sẵn sàng tại cổng `8080`.
-
----
-
-### Bước 3 — Khởi chạy Frontend (Ứng dụng Camera AI)
-
-```bash
-cd client
-npm start
-```
-
-Ứng dụng Desktop sẽ mở lên, yêu cầu quyền truy cập Camera và bắt đầu nhận diện tư thế.
-
----
-
-## 📦 Đóng gói ra file `.exe` (Windows Installer)
-
-Nếu muốn xuất thành phần mềm độc lập để cài đặt trên Windows:
-
-```bash
-# Chạy với quyền Administrator để tránh lỗi symbolic link
-cd client
-npm run build
-```
-
-Sau khi hoàn tất, file cài đặt sẽ xuất hiện tại:
-
-```
-client/dist/Posture Checker Setup 1.0.0.exe
-```
-
-Nhấp đúp vào file `.exe` để cài đặt ứng dụng.
-
-> ⚠️ **Lưu ý:** Lệnh `npm run build` phải được chạy trong terminal với quyền **Administrator** (Run as Administrator), nếu không sẽ gặp lỗi `Cannot create symbolic link`.
+1. Mở ứng dụng → Đăng ký tài khoản hoặc đăng nhập
+2. Ngồi thẳng lưng trước camera → bấm **Hiệu chuẩn** để AI học tư thế chuẩn của bạn
+3. Thu nhỏ app xuống khay hệ thống (System Tray) — app sẽ tự chạy nền
+4. Khi gù lưng quá 15 giây liên tục → app phát âm thanh + thông báo Windows
+5. Xem lịch sử vi phạm tại màn hình **Báo cáo**
 
 ---
 
@@ -115,9 +42,6 @@ Nhấp đúp vào file `.exe` để cài đặt ứng dụng.
 
 ```
 Posture-Checker/
-├── Start_App.bat            # Khởi động toàn bộ hệ thống (1 click)
-├── Stop_App.bat             # Tắt toàn bộ hệ thống (1 click)
-│
 ├── client/                  # Electron Desktop App (Frontend + AI)
 │   ├── assets/              # Âm thanh cảnh báo
 │   ├── libs/mediapipe/      # MediaPipe library (offline)
@@ -129,9 +53,8 @@ Posture-Checker/
 │   ├── main.js              # Electron Main Process
 │   └── package.json
 │
-└── server/                  # Spring Boot Backend
+└── server/                  # Spring Boot Backend (deploy trên Render)
     ├── src/                 # Mã nguồn Java
-    ├── docker-compose.yml   # Cấu hình Docker
     └── Dockerfile
 ```
 
@@ -148,8 +71,14 @@ normalizedDistance = |nose.y - midShoulder.y| / shoulderWidth
 Trong đó:
 - `nose.y` — Tọa độ Y của điểm Mũi (landmark 0)
 - `midShoulder.y` — Trung điểm Y của hai Vai (landmark 11, 12)
-- `shoulderWidth` — Chiều rộng vai theo trục X (dùng để chuẩn hóa, loại bỏ ảnh hưởng khoảng cách camera)
+- `shoulderWidth` — Chiều rộng vai theo trục X (chuẩn hóa, loại bỏ ảnh hưởng khoảng cách camera)
 
 Khi `normalizedDistance < threshold` → **Phát hiện gù lưng** → Cảnh báo âm thanh + thông báo Windows sau 15 giây liên tục.
 
 ---
+
+## Tác giả
+
+**Nguyễn Hồng Minh Quân** — Sinh viên năm 4, Ngành Kỹ thuật Phần mềm  
+Trường Đại học Công nghệ Sài Gòn — Khoa Công nghệ Thông tin  
+MSSV: DH52201291
