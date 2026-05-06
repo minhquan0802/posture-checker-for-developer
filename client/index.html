@@ -192,6 +192,10 @@
         const audioLevel2 = new Audio('./assets/canhbao_lan2.mp3');
         const audioLevel3 = new Audio('./assets/canhbao_lan3.mp3');
 
+        let isMuted = false;
+        const { ipcRenderer } = require('electron');
+        ipcRenderer.on('toggle-mute', (event, muteState) => { isMuted = muteState; });
+
         // 2. Các biến dùng để bấm giờ và cắm cờ
         let slouchStartTime = null; // Ghi nhớ thời điểm bắt đầu gù
         let hasPlayedLevel1 = false; // Cờ đánh dấu đã phát mức 1 chưa
@@ -211,17 +215,17 @@
 
             // MỨC 1: Đạt 15s và CHƯA từng phát audio mức 1
             if (slouchDurationSeconds >= 15 && slouchDurationSeconds < 30 && !hasPlayedLevel1) {
-                audioLevel1.play();
-                hasPlayedLevel1 = true; // Cắm cờ: Đã phát rồi, đừng phát lại nữa!
+                if (!isMuted) audioLevel1.play();
+                hasPlayedLevel1 = true;
             }
             // MỨC 2: Đạt 30s và CHƯA từng phát audio mức 2
             else if (slouchDurationSeconds >= 30 && slouchDurationSeconds < 45 && !hasPlayedLevel2) {
-                audioLevel2.play();
+                if (!isMuted) audioLevel2.play();
                 hasPlayedLevel2 = true;
             }
             // MỨC 3: Đạt 45s và CHƯA từng phát audio mức 3
             else if (slouchDurationSeconds >= 45 && !hasPlayedLevel3) {
-                audioLevel3.play();
+                if (!isMuted) audioLevel3.play();
                 hasPlayedLevel3 = true;
             }
         }

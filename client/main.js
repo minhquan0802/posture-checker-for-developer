@@ -9,6 +9,7 @@ let mainWindow;
 let tray;
 let dashboardWindow = null;
 let settingsWindow = null;
+let isMuted = false;
 
 function openSettings() {
     if (settingsWindow) {
@@ -155,6 +156,11 @@ app.whenReady().then(() => {
                 { label: 'Mở Màn Hình Camera', click: () => mainWindow.show() },
                 { label: 'Xem Báo Cáo Thống Kê', click: () => openDashboard() },
                 { label: 'Cài Đặt và Hiệu Chuẩn', click: () => openSettings() },
+                { label: isMuted ? '🔊 Bật tiếng' : '🔇 Tắt tiếng', click: () => {
+                    isMuted = !isMuted;
+                    mainWindow.webContents.send('toggle-mute', isMuted);
+                    updateTrayMenu(); // Cập nhật lại label
+                }},
                 { type: 'separator' },
                 { label: 'Đăng Xuất', click: () => {
                     mainWindow.webContents.send('logout-command');
