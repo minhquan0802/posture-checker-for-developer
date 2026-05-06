@@ -156,7 +156,7 @@ app.whenReady().then(() => {
                 { label: 'Mở Màn Hình Camera', click: () => mainWindow.show() },
                 { label: 'Xem Báo Cáo Thống Kê', click: () => openDashboard() },
                 { label: 'Cài Đặt và Hiệu Chuẩn', click: () => openSettings() },
-                { label: isMuted ? '🔊 Bật tiếng' : '🔇 Tắt tiếng', click: () => {
+                { label: isMuted ? 'Bật tiếng' : 'Tắt tiếng', click: () => {
                     isMuted = !isMuted;
                     mainWindow.webContents.send('toggle-mute', isMuted);
                     updateTrayMenu(); // Cập nhật lại label

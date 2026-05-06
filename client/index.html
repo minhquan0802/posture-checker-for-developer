@@ -204,7 +204,7 @@
 
 
         // 3. Hàm này sẽ được gọi liên tục khi phát hiện gù, nó sẽ kiểm tra đã đến mốc thời gian nào và phát âm thanh tương ứng
-        function triggerSlouchWarning() {
+        function triggerSlouchWarning(slouchDuration, normalizedDistance) {
             // Nếu đây là khoảnh khắc ĐẦU TIÊN phát hiện gù, bắt đầu bấm giờ!
             if (slouchStartTime === null) {
                 slouchStartTime = Date.now();
@@ -217,17 +217,36 @@
             if (slouchDurationSeconds >= 15 && slouchDurationSeconds < 30 && !hasPlayedLevel1) {
                 if (!isMuted) audioLevel1.play();
                 hasPlayedLevel1 = true;
+                sendLog(slouchDurationSeconds, normalizedDistance);
             }
             // MỨC 2: Đạt 30s và CHƯA từng phát audio mức 2
             else if (slouchDurationSeconds >= 30 && slouchDurationSeconds < 45 && !hasPlayedLevel2) {
                 if (!isMuted) audioLevel2.play();
                 hasPlayedLevel2 = true;
+                sendLog(slouchDurationSeconds, normalizedDistance);
             }
             // MỨC 3: Đạt 45s và CHƯA từng phát audio mức 3
             else if (slouchDurationSeconds >= 45 && !hasPlayedLevel3) {
                 if (!isMuted) audioLevel3.play();
                 hasPlayedLevel3 = true;
+                sendLog(slouchDurationSeconds, normalizedDistance);
             }
+        }
+
+        function sendLog(durationSeconds, distanceValue) {
+            if (!userInDb?.id) return;
+            fetch('https://posture-checker-for-developer.onrender.com/api/logs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: userInDb.id,
+                    warningType: "GU_LUNG",
+                    durationSeconds,
+                    distanceValue
+                })
+            })
+            .then(() => console.log("Đã gửi log:", durationSeconds + "s"))
+            .catch(e => console.error("Lỗi gửi log:", e));
         }
 
         // 4. Hàm này sẽ được gọi khi người dùng ngồi thẳng trở lại, nó sẽ reset mọi thứ về ban đầu để sẵn sàng cho lần gù tiếp theo
