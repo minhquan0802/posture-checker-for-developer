@@ -25,6 +25,9 @@ Tải file cài đặt Windows tại: **[Releases](https://github.com/minhquan08
 - Webcam
 
 Nhấp đúp vào file `.exe` → cài đặt → mở app và sử dụng. Không cần cài thêm bất kỳ phần mềm nào khác.
+> ⚠️ Windows có thể hiển thị cảnh báo khi tải về vì ứng dụng chưa có chữ ký số. 
+> Bấm **Keep** để tiếp tục tải, sau đó bấm **More info → Run anyway** khi cài đặt.
+> Đây là hiện tượng bình thường với phần mềm cá nhân.
 
 ---
 
