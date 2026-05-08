@@ -72,6 +72,7 @@
 
     <script>
 
+        const { ipcRenderer } = require('electron');
         document.addEventListener('DOMContentLoaded', () => {
 
             const currentUser = JSON.parse(localStorage.getItem('currentUser'));
@@ -153,22 +154,36 @@
                 document.getElementById('thresholdDisplay').innerText = this.value;
             });
 
-            function saveThreshold(val = null) {
+            async function saveThreshold(val = null) {
                 if (!currentUser || !currentUser.id) return;
+
+                // Lấy giá trị truyền vào hoặc đọc từ thanh trượt (slider)
                 const newThreshold = val !== null ? val : parseFloat(document.getElementById('thresholdSlider').value);
 
-                fetch(`https://posture-checker-for-developer.onrender.com/api/users/${currentUser.id}/threshold`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(newThreshold)
-                })
-                    .then(res => {
-                        if (!res.ok) throw new Error("Lỗi cập nhật Server");
+                try {
+                    // Gọi xuống Backend (main.js) thông qua IPC
+                    const response = await ipcRenderer.invoke('api-update-threshold', {
+                        userId: currentUser.id,
+                        newThreshold: newThreshold
+                    });
+
+                    if (response.success) {
+                        // 1. Cập nhật biến trên RAM
                         currentUser.threshold = newThreshold;
+
+                        // 2. Lưu xuống LocalStorage để phiên làm việc sau nhớ lấy
                         localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                        if (val === null) alert("Đã lưu ngưỡng mới thành công!"); // Chỉ báo alert nếu user tự bấm nút
-                    })
-                    .catch(err => alert(err.message));
+
+                        // 3. Chỉ thông báo hiển thị lên màn hình nếu user nhấn nút (val === null)
+                        if (val === null) {
+                            alert("✅ Đã lưu cấu hình ngưỡng mới thành công!");
+                        }
+                    } else {
+                        throw new Error(response.message || "Lỗi cập nhật Database");
+                    }
+                } catch (err) {
+                    alert("❌ Lỗi hệ thống: " + err.message);
+                }
             }
 
             const btnCalibrate = document.getElementById('btnCalibrate');
@@ -180,7 +195,7 @@
             if (btnSaveThreshold) {
                 // Bọc trong () => để đảm bảo không truyền tham số rác vào hàm
                 btnSaveThreshold.addEventListener('click', () => {
-                    saveThreshold(); 
+                    saveThreshold();
                 });
             }
         });

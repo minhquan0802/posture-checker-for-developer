@@ -124,6 +124,10 @@
     </div>
 
     <script>
+        // Gọi thư viện ipcRenderer của Electron để giao tiếp với file main.js
+        const { ipcRenderer } = require('electron');
+
+
         // --- CHỨC NĂNG KIỂM TRA TỰ ĐỘNG ĐĂNG NHẬP ---
         // Chạy ngay lập tức khi script được load
         (function checkAutoLogin() {
@@ -145,35 +149,37 @@
         }
 
         // Hàm gọi API Đăng Nhập
-        function handleLogin() {
+        async function handleLogin() {
             const user = document.getElementById('loginUsername').value;
             const pass = document.getElementById('loginPassword').value;
 
-            fetch('https://posture-checker-for-developer.onrender.com/api/users/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: user, password: pass })
-            })
-                .then(response => {
-                    if (!response.ok) throw new Error("Sai tài khoản hoặc mật khẩu");
-                    return response.json();
-                })
-                .then(data => {
+            if (!user || !pass) {
+                alert("Vui lòng nhập đầy đủ tài khoản và mật khẩu!");
+                return;
+            }
+
+            try {
+                // Gọi API 'api-login' đã khai báo bên file main.js
+                const response = await ipcRenderer.invoke('api-login', { username: user, password: pass });
+
+                if (response.success) {
                     // Đăng nhập thành công!
                     // 1. Lưu thông tin user (kèm threshold) vào bộ nhớ cục bộ
-                    localStorage.setItem('currentUser', JSON.stringify(data));
+                    localStorage.setItem('currentUser', JSON.stringify(response.user));
 
                     // 2. Chuyển thẳng sang trang Camera (index.html)
                     window.location.href = 'index.html'; 
-                    
-                })
-                .catch(error => {
-                    alert(error.message); // Báo lỗi lên màn hình nếu sai pass
-                });
+                } else {
+                    // Báo lỗi lên màn hình nếu sai tài khoản/pass (response.message gửi từ backend)
+                    alert(response.message); 
+                }
+            } catch (error) {
+                alert("Lỗi hệ thống: " + error.message);
+            }
         }
 
         // Hàm gọi API Đăng Ký
-        function handleRegister() {
+        async function handleRegister() {
             const user = document.getElementById('regUsername').value;
             const pass = document.getElementById('regPassword').value;
 
@@ -183,42 +189,35 @@
                 return;
             }
 
-            // Gọi API Đăng Ký
-            // fetch('http://localhost:8080/api/users/register', {
-            fetch('https://posture-checker-for-developer.onrender.com/api/users/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: user, password: pass })
-            })
-                .then(async response => {
-                    if (!response.ok) {
-                        // Hứng câu thông báo lỗi từ Backend (ví dụ: "Tên đăng nhập đã tồn tại!")
-                        const errorMessage = await response.text();
-                        throw new Error(errorMessage);
-                    }
-                    return response.json(); // Nếu thành công thì parse JSON
-                })
-                .then(data => {
+            try {
+                // Gọi API 'api-register' bên file main.js
+                const response = await ipcRenderer.invoke('api-register', { username: user, password: pass });
+
+                if (response.success) {
                     alert("Đăng ký thành công! Mời bạn đăng nhập.");
 
+                    // Tự động điền user vào ô đăng nhập
                     document.getElementById('loginUsername').value = user;
                     document.getElementById('loginPassword').value = '';
-
+                    
+                    // Xóa trắng form đăng ký
                     document.getElementById('regUsername').value = '';
                     document.getElementById('regPassword').value = '';
 
+                    // Lật lại form đăng nhập
                     toggleForm();
 
                     // FIX LỖI MẤT FOCUS CỦA ELECTRON:
-                    // Đợi 100ms cho UI lật xong form, rồi ép con trỏ chuột nháy vào ô mật khẩu
                     setTimeout(() => {
                         document.getElementById('loginPassword').focus();
                     }, 100);
-                })
-                .catch(error => {
-                    // Hiển thị lỗi lên màn hình
-                    alert("Lỗi đăng ký: " + error.message);
-                });
+                } else {
+                    // Báo lỗi nếu trùng username
+                    alert("Lỗi đăng ký: " + response.message);
+                }
+            } catch (error) {
+                alert("Lỗi hệ thống: " + error.message);
+            }
         }
 
         // Hàm xử lý ẩn/hiện mật khẩu

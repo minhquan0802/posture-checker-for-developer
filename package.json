@@ -21,6 +21,14 @@
     "directories": {
       "output": "dist"
     },
+    "files": [
+      "main.js",
+      "src/**/*",
+      "assets/**/*",
+      "libs/**/*",
+      "models/**/*",
+      "package.json"
+    ],
     "win": {
       "target": "nsis",
       "icon": "assets/icon.ico"
@@ -31,5 +39,9 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true
     }
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.9.0"
   }
 }
