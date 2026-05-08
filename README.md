@@ -46,7 +46,7 @@ Tải file cài đặt Windows (.exe) bản mới nhất tại: **[Releases v2.0
 
 ## 🗂️ Cấu trúc thư mục (Clean Architecture)
 
-Hệ thống được tổ chức theo mô hình tách biệt rõ ràng giữa Frontend (Views) và Backend (Dịch vụ nội bộ):
+Hệ thống được tổ chức theo mô hình tách biệt rõ ràng giữa Frontend và Backend:
 
 ```text
 Posture-Checker-for-Developer/
@@ -54,17 +54,16 @@ Posture-Checker-for-Developer/
 ├── libs/                   # Thư viện core chạy offline (MediaPipe WASM)
 ├── models/                 # File trọng số AI (.task)
 ├── src/                    # Mã nguồn chính của ứng dụng
-│   ├── backend/            # [Lớp dữ liệu & Nghiệp vụ] Node.js, SQLite
+│   ├── BE/                 # [Lớp dữ liệu & Nghiệp vụ] Node.js, SQLite
 │   │   ├── database.js     # Khởi tạo CSDL, tự động tạo bảng
 │   │   └── service.js      # Xử lý logic Đăng nhập, Lưu Log, Mã hóa mật khẩu
-│   └── views/              # [Lớp hiển thị] Giao diện người dùng
+│   └── FE/                 # [Lớp hiển thị] Giao diện người dùng
 │       ├── dashboard.html  # Bảng thống kê dữ liệu
 │       ├── index.html      # Màn hình Camera AI chính
 │       ├── login.html      # Màn hình xác thực
 │       └── settings.html   # Giao diện cài đặt ngưỡng & hiệu chuẩn
 ├── main.js                 # Lõi Electron: Quản lý vòng đời app, Tray Menu, IPC API
 └── package.json            # Cấu hình project và đóng gói (electron-builder)
----
 ```
 
 ## 🧠 Thuật toán nhận diện tư thế
