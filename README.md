@@ -65,6 +65,7 @@ Posture-Checker-for-Developer/
 ├── main.js                 # Lõi Electron: Quản lý vòng đời app, Tray Menu, IPC API
 └── package.json            # Cấu hình project và đóng gói (electron-builder)
 ---
+```
 
 ## 🧠 Thuật toán nhận diện tư thế
 
