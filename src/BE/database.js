@@ -20,9 +20,7 @@ const db = new Database(dbPath, { verbose: console.log });
 // Bật tính năng kiểm tra Khóa ngoại (Foreign Key) của SQLite
 db.pragma('foreign_keys = ON');
 
-// 2. Hàm khởi tạo cấu trúc Bảng (Thay thế cho spring.jpa.hibernate.ddl-auto=update)
 function initDB() {
-    // Tương đương class User
     const createUsersTable = `
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -31,10 +29,6 @@ function initDB() {
             threshold REAL
         );
     `;
-
-    // Tương đương class PostureLog
-    // Enum WarningType được chuyển thành điều kiện CHECK (Chỉ cho phép 2 giá trị)
-    // @PrePersist createdAt được chuyển thành DEFAULT CURRENT_TIMESTAMP
     const createLogsTable = `
         CREATE TABLE IF NOT EXISTS posture_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,

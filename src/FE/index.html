@@ -453,6 +453,7 @@
                     canvasCtx.save();
                     canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
 
+                    // Xử lý dữ liệu trả về từ callback của MediaPipe
                     if (result.landmarks.length > 0) {
                         const landmarks = result.landmarks[0];
 
@@ -502,7 +503,7 @@
                             // ------------------------------------------------
                             // PHÁN ĐOÁN VÀ BẤM GIỜ
                             // ------------------------------------------------
-                            const isLechVai = shoulderTilt > 0.04; // Ngưỡng 0.04 (ông có thể tự test và tăng/giảm số này)
+                            const isLechVai = shoulderTilt > 0.08;
                             const isSaiTuThe = normalizedDistance < currentThreshold;
 
                             if (isLechVai || isSaiTuThe) {
