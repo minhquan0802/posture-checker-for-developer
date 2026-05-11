@@ -46,24 +46,10 @@ function openDashboard() {
 }
 
 function createWindow() {
-    // 1. Đọc tùy chọn từ DB
-    let shouldHide = false;
-    try {
-        const setting = db.prepare('SELECT start_minimized FROM users LIMIT 1').get();
-        if (setting && setting.start_minimized === 1) {
-            shouldHide = true;
-        }
-        // 👇 Thêm dòng này để debug xem DB thực sự đang lưu số mấy
-        console.log(">>> Trạng thái ẩn cửa sổ (shouldHide):", shouldHide); 
-    } catch (err) {
-        console.log("Chưa đọc được cài đặt DB:", err);
-    }
-
-    // 2. Tạo cửa sổ
     mainWindow = new BrowserWindow({
         width: 1000,
         height: 800,
-        show: !shouldHide, // Nếu shouldHide = true thì show = false
+        show: true,
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false,
@@ -158,24 +144,6 @@ app.whenReady().then(() => {
 // PHẦN API (BACKEND) - Lắng nghe yêu cầu từ giao diện HTML
 // =========================================================
 
-// API: Cập nhật tùy chọn "Mở Ứng Dụng ở chế độ ẩn" (Start Minimized)
-ipcMain.on('update-start-behavior', (event, startHidden) => {
-    const val = startHidden ? 1 : 0;
-    
-    // Đã thêm "const info =" ở đầu dòng này
-    const info = db.prepare('UPDATE users SET start_minimized = ?').run(val);
-    
-    console.log(`Đã lưu cài đặt chạy ngầm: ${startHidden}`);
-    // Giờ thì biến info đã tồn tại, dòng này sẽ không báo lỗi nữa
-    console.log(`Số dòng trong DB thực sự được cập nhật: ${info.changes}`); 
-});
-
-// API: Lấy trạng thái "Mở thu nhỏ" từ Database để hiển thị lên giao diện
-ipcMain.handle('get-start-hidden-status', () => {
-    const setting = db.prepare('SELECT start_minimized FROM users LIMIT 1').get();
-    return setting ? setting.start_minimized === 1 : false;
-});
-
 // 1. Hàm lắng nghe yêu cầu Bật/Tắt từ giao diện
 ipcMain.on('toggle-autostart', (event, enable) => {
     app.setLoginItemSettings({
@@ -203,11 +171,24 @@ ipcMain.handle('api-get-recent-logs', (event, userId) => {
 });
 
 // API: Cập nhật ngưỡng gù lưng (Threshold)
+// Handler xử lý cập nhật ngưỡng (Threshold)
 ipcMain.handle('api-update-threshold', (event, { userId, newThreshold }) => {
     try {
-        const success = UserService.updateThreshold(userId, newThreshold);
-        return { success: success };
+        // 1. Chuẩn bị câu lệnh SQL
+        const stmt = db.prepare('UPDATE users SET threshold = ? WHERE id = ?');
+        
+        // 2. Thực thi lệnh
+        const info = stmt.run(newThreshold, userId);
+
+        // 3. Kiểm tra xem có dòng nào được cập nhật không
+        if (info.changes > 0) {
+            console.log(`[Database] Đã cập nhật Threshold mới cho User ${userId}: ${newThreshold}`);
+            return { success: true };
+        } else {
+            return { success: false, message: "Không tìm thấy người dùng để cập nhật." };
+        }
     } catch (error) {
+        console.error("❌ Lỗi khi cập nhật Threshold:", error);
         return { success: false, message: error.message };
     }
 });
@@ -237,9 +218,10 @@ ipcMain.handle('api-register', (event, { username, password }) => {
 });
 
 // API: Lưu Log Gù Lưng
-ipcMain.handle('api-save-log', (event, { userId, duration, distance }) => {
+ipcMain.handle('api-save-log', (event, { userId, type, duration, distance }) => {
     try {
-        PostureLogService.processAndSaveLog(userId, 'GU_LUNG', duration, distance);
+        // Thay thế 'GU_LUNG' bằng biến type vừa nhận được
+        PostureLogService.processAndSaveLog(userId, type, duration, distance);
         return { success: true };
     } catch (error) {
         console.error("Lỗi lưu log:", error);

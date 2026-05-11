@@ -86,6 +86,29 @@
             font-size: 12px;
             font-weight: bold;
         }
+
+        /* Thêm một chút CSS để phân biệt màu sắc các loại lỗi */
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: white;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+
+        .badge-sai {
+            background-color: #e67e22;
+        }
+
+        /* Màu cam cho Sai tư thế */
+        .badge-lech {
+            background-color: #9b59b6;
+        }
+
+        /* Màu tím cho Lệch vai */
+        .badge-default {
+            background-color: #7f8c8d;
+        }
     </style>
 </head>
 
@@ -99,7 +122,7 @@
                     <span id="totalWarnings">0</span>
                 </div>
                 <div class="stat-item">
-                    Tổng thời gian gù lưng
+                    Tổng thời gian vi phạm
                     <span id="totalDuration">0s</span>
                 </div>
             </div>
@@ -127,56 +150,69 @@
     <script>
         const { ipcRenderer } = require('electron');
 
-        // Bọc toàn bộ logic vào sự kiện khi trang đã tải xong
         document.addEventListener('DOMContentLoaded', async () => {
-
-            // 1. Lấy thông tin user hiện tại
             const currentUser = JSON.parse(localStorage.getItem('currentUser'));
 
-            // KIỂM TRA ĐĂNG NHẬP
             if (!currentUser || !currentUser.id) {
                 alert("Phiên làm việc hết hạn, vui lòng đăng nhập lại!");
                 window.close();
-                return; // Dừng thực thi các lệnh phía dưới
+                return;
             }
 
             const userId = currentUser.id;
 
             try {
-                // 2. Gọi API Local lấy thống kê hôm nay
+                // 1. Lấy thống kê tổng quát
                 const statsResponse = await ipcRenderer.invoke('api-get-today-stats', userId);
-
                 if (statsResponse.success) {
                     const statsData = statsResponse.data;
-                    // Chú ý: Map lại tên biến cho khớp với kết quả trả về từ SQLite
                     document.getElementById('totalWarnings').innerText = statsData.logCount;
                     document.getElementById('totalDuration').innerText = statsData.totalDuration + 's';
                 }
 
-                // 3. Gọi API Local lấy danh sách 20 lần gần nhất
+                // 2. Lấy danh sách lịch sử
                 const recentResponse = await ipcRenderer.invoke('api-get-recent-logs', userId);
                 const tbody = document.getElementById('logTableBody');
 
                 if (!tbody) return;
-                tbody.innerHTML = ''; // Xóa dữ liệu cũ
+                tbody.innerHTML = '';
 
                 if (recentResponse.success) {
                     const logs = recentResponse.data;
 
                     logs.forEach(log => {
-                        // SQLite lưu thời gian dạng UTC, thêm 'Z' để Javascript hiểu đúng múi giờ
                         const dateObj = new Date(log.created_at + 'Z');
                         const timeString = dateObj.toLocaleTimeString('vi-VN');
                         const dateString = dateObj.toLocaleDateString('vi-VN');
 
-                        const typeText = log.warning_type === 'GU_LUNG' ? 'Gù Lưng' : log.warning_type;
+                        // --- LOGIC MỚI: PHÂN LOẠI HIỂN THỊ ---
+                        let typeText = "";
+                        let badgeClass = "";
+
+                        switch (log.warning_type) {
+                            case 'SAI_TU_THE':
+                                typeText = "Sai Tư Thế";
+                                badgeClass = "badge-sai";
+                                break;
+                            case 'LECH_VAI':
+                                typeText = "Lệch Vai";
+                                badgeClass = "badge-lech";
+                                break;
+                            case 'NGOI_LAU':
+                                typeText = "Ngồi Quá Lâu";
+                                badgeClass = "badge-default";
+                                break;
+                            default:
+                                typeText = log.warning_type;
+                                badgeClass = "badge-default";
+                        }
 
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
-                        <td><strong>${timeString}</strong> - ${dateString}</td>
-                        <td><span class="badge">${typeText}</span></td>
-                        <td>${log.duration_seconds} giây</td>
-                    `;
+                            <td><strong>${timeString}</strong> - ${dateString}</td>
+                            <td><span class="badge ${badgeClass}">${typeText}</span></td>
+                            <td>${log.duration_seconds} giây</td>
+                        `;
                         tbody.appendChild(tr);
                     });
                 } else {

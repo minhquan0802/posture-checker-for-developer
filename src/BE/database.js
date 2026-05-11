@@ -28,8 +28,7 @@ function initDB() {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL,
-            threshold REAL,
-            start_minimized INTEGER DEFAULT 0 -- 0 là hiện, 1 là ẩn khi mở
+            threshold REAL
         );
     `;
 
@@ -40,7 +39,7 @@ function initDB() {
         CREATE TABLE IF NOT EXISTS posture_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
-            warning_type TEXT NOT NULL CHECK(warning_type IN ('GU_LUNG', 'NGOI_LAU')),
+            warning_type TEXT NOT NULL CHECK(warning_type IN ('SAI_TU_THE', 'LECH_VAI', 'NGOI_LAU')),
             duration_seconds INTEGER NOT NULL,
             distance_value REAL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

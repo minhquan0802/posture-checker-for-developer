@@ -49,7 +49,7 @@ const UserService = {
 const PostureLogService = {
     processAndSaveLog: (userId, warningType, durationSeconds, distanceValue) => {
         if (durationSeconds < 0) {
-            throw new Error("Thời gian gù lưng không hợp lệ!");
+            throw new Error("Thời gian vi phạm tư thế không hợp lệ!");
         }
 
         // Kiểm tra User tồn tại

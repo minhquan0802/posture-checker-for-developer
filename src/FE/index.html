@@ -204,49 +204,46 @@
 
 
         // 3. Hàm này sẽ được gọi liên tục khi phát hiện gù, nó sẽ kiểm tra đã đến mốc thời gian nào và phát âm thanh tương ứng
-        function triggerSlouchWarning(slouchDuration, normalizedDistance) {
-            // Nếu đây là khoảnh khắc ĐẦU TIÊN phát hiện gù, bắt đầu bấm giờ!
-            if (slouchStartTime === null) {
-                slouchStartTime = Date.now();
-            }
-
-            // Tính xem người dùng đã gù được bao nhiêu giây rồi
-            const slouchDurationSeconds = Math.floor((Date.now() - slouchStartTime) / 1000);
+        function triggerPostureWarning(warningType, duration, warningValue) {
+            // Làm tròn số giây vi phạm
+            const durationSeconds = Math.floor(duration);
 
             // MỨC 1: Đạt 15s và CHƯA từng phát audio mức 1
-            if (slouchDurationSeconds >= 15 && slouchDurationSeconds < 30 && !hasPlayedLevel1) {
+            if (durationSeconds >= 15 && durationSeconds < 30 && !hasPlayedLevel1) {
                 if (!isMuted) audioLevel1.play();
                 hasPlayedLevel1 = true;
-                sendLog(slouchDurationSeconds, normalizedDistance);
+                // Truyền thêm warningType xuống hàm lưu DB
+                sendLog(warningType, durationSeconds, warningValue);
             }
             // MỨC 2: Đạt 30s và CHƯA từng phát audio mức 2
-            else if (slouchDurationSeconds >= 30 && slouchDurationSeconds < 45 && !hasPlayedLevel2) {
+            else if (durationSeconds >= 30 && durationSeconds < 45 && !hasPlayedLevel2) {
                 if (!isMuted) audioLevel2.play();
                 hasPlayedLevel2 = true;
-                sendLog(slouchDurationSeconds, normalizedDistance);
+                sendLog(warningType, durationSeconds, warningValue);
             }
             // MỨC 3: Đạt 45s và CHƯA từng phát audio mức 3
-            else if (slouchDurationSeconds >= 45 && !hasPlayedLevel3) {
+            else if (durationSeconds >= 45 && !hasPlayedLevel3) {
                 if (!isMuted) audioLevel3.play();
                 hasPlayedLevel3 = true;
-                sendLog(slouchDurationSeconds, normalizedDistance);
+                sendLog(warningType, durationSeconds, warningValue);
             }
         }
 
         // Hàm này sẽ gửi log về cho backend (main.js) để lưu vào SQLite ngầm dưới nền
-        async function sendLog(durationSeconds, distanceValue) {
+        async function sendLog(warningType, durationSeconds, distanceValue) {
             if (!userInDb?.id) return;
 
             try {
                 // Gọi thẳng xuống main.js qua kênh IPC
                 const response = await ipcRenderer.invoke('api-save-log', {
                     userId: userInDb.id,
+                    type: warningType, // 👈 Thêm dòng này để gửi loại lỗi (SAI_TU_THE hoặc LECH_VAI)
                     duration: durationSeconds,
                     distance: distanceValue
                 });
 
                 if (response.success) {
-                    console.log("✅ Đã ghi log thành công vào DB:", durationSeconds + "s");
+                    console.log(`✅ Đã ghi log [${warningType}] thành công vào DB:`, durationSeconds + "s");
                 } else {
                     console.error("❌ Lỗi từ Backend:", response.message);
                 }
@@ -467,10 +464,7 @@
                         const rightShoulder = landmarks[12];
 
                         // ------------------------------------------------
-                        // GÙ LƯNG
-                        // normalizedDistance = Y (mũi→trung điểm vai) / chiều rộng vai
-                        // Bất biến với khoảng cách camera
-                        // Giảm khi gù → so sánh với threshold
+                        // TÍNH CHIỀU RỘNG VAI ĐỂ LỌC GÓC KHUẤT
                         // ------------------------------------------------
                         const shoulderWidth = Math.abs(leftShoulder.x - rightShoulder.x);
 
@@ -479,52 +473,62 @@
                             statusBoard.innerText = "↔️ Hãy nhìn thẳng vào camera";
                             statusBoard.className = "loading";
                         } else {
+                            // ------------------------------------------------
+                            // TÍNH TOÁN 2 CHỈ SỐ CỐT LÕI
+                            // ------------------------------------------------
+                            // 1. Chỉ số Cúi/Gù (Khoảng cách Mũi -> Trung điểm Vai)
                             const midShoulderY = (leftShoulder.y + rightShoulder.y) / 2;
                             const normalizedDistance = Math.abs(nose.y - midShoulderY) / shoulderWidth;
 
-                            // Thu mẫu calibrate
+                            // 2. Chỉ số Lệch Vai (Độ chênh lệch Y giữa 2 vai)
+                            const shoulderTilt = Math.abs(leftShoulder.y - rightShoulder.y);
+
+                            // Thu mẫu calibrate (Giữ nguyên code cũ)
                             if (isPopupCalibrating) {
                                 popupCalibrationSamples.push(normalizedDistance);
                             }
-                            const calibrationStatus = localStorage.getItem('calibrationStatus');
-                            if (calibrationStatus === 'START') {
-                                let samples = JSON.parse(localStorage.getItem('calibrationData') || '[]');
-                                if (samples.length < 200) {
-                                    samples.push(normalizedDistance);
-                                    localStorage.setItem('calibrationData', JSON.stringify(samples));
+                                const calibrationStatus = localStorage.getItem('calibrationStatus');
+                                if (calibrationStatus === 'START') {
+                                    let samples = JSON.parse(localStorage.getItem('calibrationData') || '[]');
+                                    if (samples.length < 200) {
+                                        samples.push(normalizedDistance);
+                                        localStorage.setItem('calibrationData', JSON.stringify(samples));
+                                    }
                                 }
-                            }
 
-                            // DEBUG
-                            debugText.innerText = `Khoảng cách mũi và vai: ${normalizedDistance.toFixed(3)} (ngưỡng: ${currentThreshold})`;
-                            // noseText.innerText = `Mũi (0)       : (x: ${nose.x.toFixed(3)}, y: ${nose.y.toFixed(3)})`;
-                            // leftShoulderText.innerText = `Vai trái (11) : (x: ${leftShoulder.x.toFixed(3)}, y: ${leftShoulder.y.toFixed(3)})`;
-                            // rightShoulderText.innerText = `Vai phải (12) : (x: ${rightShoulder.x.toFixed(3)}, y: ${rightShoulder.y.toFixed(3)})`;
+                            // DEBUG: Hiển thị cả 2 thông số lên màn hình để dễ test
+                            debugText.innerText = `Cúi: ${normalizedDistance.toFixed(3)} (Ngưỡng: ${currentThreshold}) | Lệch vai: ${shoulderTilt.toFixed(3)}`;
 
                             // ------------------------------------------------
-                            // PHÁN ĐOÁN
+                            // PHÁN ĐOÁN VÀ BẤM GIỜ
                             // ------------------------------------------------
-                            const isHunchback = normalizedDistance < currentThreshold;
+                            const isLechVai = shoulderTilt > 0.04; // Ngưỡng 0.04 (ông có thể tự test và tăng/giảm số này)
+                            const isSaiTuThe = normalizedDistance < currentThreshold;
 
-                            if (isHunchback) {
-                                statusBoard.innerText = "⚠️ BẠN ĐANG GÙ LƯNG!";
+                            if (isLechVai || isSaiTuThe) {
+                                // Xác định loại lỗi ưu tiên hiển thị (Ưu tiên Lệch vai nếu bị cả 2)
+                                const warningType = isLechVai ? 'LECH_VAI' : 'SAI_TU_THE';
+                                const warningText = isLechVai ? "⚠️ BẠN ĐANG NGỒI LỆCH VAI!" : "⚠️ BẠN ĐANG SAI TƯ THẾ!";
+                                const warningValue = isLechVai ? shoulderTilt : normalizedDistance;
+
+                                statusBoard.innerText = warningText;
                                 statusBoard.className = "bad";
 
-                                // Bắt đầu bấm giờ
+                                // Bắt đầu bấm giờ vi phạm
                                 if (slouchStartTime === null) {
                                     slouchStartTime = Date.now();
                                 } else {
                                     const slouchDuration = (Date.now() - slouchStartTime) / 1000;
                                     debugText.innerText += ` | Liên tục: ${slouchDuration.toFixed(1)}s`;
 
-                                    triggerSlouchWarning(slouchDuration, normalizedDistance);
+                                    // Gọi hàm cảnh báo mới (Đã truyền thêm tham số warningType)
+                                    triggerPostureWarning(warningType, slouchDuration, warningValue);
                                 }
                             } else {
+                                // Nếu ngồi đẹp lại thì reset mọi thứ
                                 resetPostureStatus();
                             }
                         }
-
-
                     }
                     canvasCtx.restore();
                 });
