@@ -272,11 +272,7 @@
 
         let lastAlertTime = 0;
 
-        import {
-            PoseLandmarker,
-            FilesetResolver,
-            DrawingUtils
-        } from "../../libs/mediapipe/vision_bundle.mjs";
+
 
         const videoElement = document.getElementById('input_video');
         const canvasElement = document.getElementById('output_canvas');
@@ -396,6 +392,14 @@
         // ----------------------------------------------------------------
         // KHỞI TẠO MODEL
         // ----------------------------------------------------------------
+
+
+        import {
+            PoseLandmarker,
+            FilesetResolver,
+            DrawingUtils
+        } from "../../libs/mediapipe/vision_bundle.mjs";
+
         const createPoseLandmarker = async () => {
             const vision = await FilesetResolver.forVisionTasks("../../libs/mediapipe/wasm");
             poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
@@ -403,8 +407,8 @@
                     modelAssetPath: "../../models/pose_landmarker_full.task",
                     delegate: "GPU"
                 },
-                runningMode: "VIDEO",
-                numPoses: 1
+                runningMode: "VIDEO", // Chế độ xử lý video liên tục
+                numPoses: 1 // Chỉ theo dõi 1 người duy nhất trong khung hình để tối ưu hiệu năng
             });
             statusBoard.innerText = "Model đã sẵn sàng! Đang mở camera...";
             startCamera();

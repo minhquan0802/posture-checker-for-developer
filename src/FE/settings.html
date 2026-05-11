@@ -36,6 +36,18 @@
 </head>
 
 <body>
+
+    <div class="container">
+        <div class="card">
+            <h2>🖥️ Cài Đặt Hệ Thống</h2>
+            <div style="display: flex; align-items: center; margin-top: 15px;">
+                <input type="checkbox" id="autostart-checkbox" style="width: 18px; height: 18px; cursor: pointer; margin-right: 10px;">
+                <label for="autostart-checkbox" style="font-weight: bold; cursor: pointer; font-size: 16px;">
+                    Khởi động cùng Windows (Chạy ngầm)
+                </label>
+            </div>
+        </div>
+
     <div class="container">
         <div class="card">
             <h2>🎯 Hiệu Chuẩn Tự Động</h2>
@@ -198,6 +210,24 @@
                     saveThreshold();
                 });
             }
+        });
+
+
+
+        const autostartCheckbox = document.getElementById('autostart-checkbox');
+
+        // 1. Khi vừa mở màn hình Settings: Kiểm tra xem app ĐANG bật hay tắt tự khởi động
+        async function loadAutostartStatus() {
+            const isAutostart = await ipcRenderer.invoke('get-autostart-status');
+            autostartCheckbox.checked = isAutostart; // Cập nhật trạng thái cho nút
+        }
+        loadAutostartStatus();
+
+        // 2. Khi người dùng click Bật/Tắt cái nút
+        autostartCheckbox.addEventListener('change', (event) => {
+            const isChecked = event.target.checked;
+            // Gửi lệnh xuống main.js để thực thi
+            ipcRenderer.send('toggle-autostart', isChecked);
         });
     </script>
 </body>

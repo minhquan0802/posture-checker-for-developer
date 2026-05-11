@@ -128,6 +128,23 @@ app.whenReady().then(() => {
 // PHẦN API (BACKEND) - Lắng nghe yêu cầu từ giao diện HTML
 // =========================================================
 
+// 1. Hàm lắng nghe yêu cầu Bật/Tắt từ giao diện
+ipcMain.on('toggle-autostart', (event, enable) => {
+    app.setLoginItemSettings({
+        openAtLogin: enable,
+        path: app.getPath('exe') // Rất quan trọng: Trỏ đúng vào file .exe khi đã build
+    });
+    console.log(`Đã ${enable ? 'BẬT' : 'TẮT'} khởi động cùng Windows`);
+});
+
+// 2. Hàm kiểm tra trạng thái hiện tại (để hiển thị lên nút gạt lúc mới mở app)
+ipcMain.handle('get-autostart-status', () => {
+    const settings = app.getLoginItemSettings();
+    return settings.openAtLogin;
+});
+
+
+
 // API: Lấy 20 lần gù lưng gần nhất
 ipcMain.handle('api-get-recent-logs', (event, userId) => {
     try {
