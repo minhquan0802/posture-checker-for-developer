@@ -233,6 +233,7 @@
             }
         }
 
+        // Hàm này sẽ gửi log về cho backend (main.js) để lưu vào SQLite ngầm dưới nền
         async function sendLog(durationSeconds, distanceValue) {
             if (!userInDb?.id) return;
 

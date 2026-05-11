@@ -41,195 +41,223 @@
         <div class="card">
             <h2>🖥️ Cài Đặt Hệ Thống</h2>
             <div style="display: flex; align-items: center; margin-top: 15px;">
-                <input type="checkbox" id="autostart-checkbox" style="width: 18px; height: 18px; cursor: pointer; margin-right: 10px;">
+                <input type="checkbox" id="autostart-checkbox"
+                    style="width: 18px; height: 18px; cursor: pointer; margin-right: 10px;">
                 <label for="autostart-checkbox" style="font-weight: bold; cursor: pointer; font-size: 16px;">
                     Khởi động cùng Windows (Chạy ngầm)
                 </label>
             </div>
+
+            <!-- <div style="display: flex; align-items: center; margin-top: 15px;">
+                <input type="checkbox" id="start-hidden-checkbox"
+                    style="width: 18px; height: 18px; cursor: pointer; margin-right: 10px;">
+                <label for="start-hidden-checkbox" style="font-weight: bold; cursor: pointer; font-size: 16px;">
+                    Mở ứng dụng ở dạng thu nhỏ (Chạy ngầm)
+                </label>
+            </div> -->
         </div>
 
-    <div class="container">
-        <div class="card">
-            <h2>🎯 Hiệu Chuẩn Tự Động</h2>
-            <p>Ngồi thẳng lưng trước camera và bấm nút để AI học tư thế chuẩn của bạn.</p>
+        <div class="container">
+            <div class="card">
+                <h2>🎯 Hiệu Chuẩn Tự Động</h2>
+                <p>Ngồi thẳng lưng trước camera và bấm nút để AI học tư thế chuẩn của bạn.</p>
 
-            <div id="calibrationStatus" style="font-weight: bold; color: #2563eb; margin: 10px 0;">
-                Trạng thái: Sẵn sàng
+                <div id="calibrationStatus" style="font-weight: bold; color: #2563eb; margin: 10px 0;">
+                    Trạng thái: Sẵn sàng
+                </div>
+
+                <button id="btnCalibrate"
+                    style="background: #6366f1; color: white; padding: 12px; border: none; border-radius: 5px; cursor: pointer; width: 100%;">
+                    Bắt đầu hiệu chuẩn (5 giây)
+                </button>
             </div>
 
-            <button id="btnCalibrate"
-                style="background: #6366f1; color: white; padding: 12px; border: none; border-radius: 5px; cursor: pointer; width: 100%;">
-                Bắt đầu hiệu chuẩn (5 giây)
-            </button>
-        </div>
-
-        <div class="card">
-            <h2>⚙️ Cài Đặt Cá Nhân</h2>
-            <div style="margin-top: 15px;">
-                <label style="font-weight: bold;">Ngưỡng nhận diện gù lưng: <span id="thresholdDisplay"
-                        style="color: #2563eb; font-size: 20px;">0.40</span></label>
-                <br><br>
-                <input type="range" id="thresholdSlider" min="0.10" max="0.80" step="0.01"
-                    style="width: 100%; cursor: pointer;">
-                <p style="font-size: 13px; color: #666; margin-top: 8px;">
-                    <i>* Gợi ý: Kéo sang trái nếu ngồi xa camera. Kéo sang phải nếu ngồi gần. (Số càng nhỏ càng
-                        nhạy)</i>
-                </p>
-                <button id="BtnsaveThreshold"
-                    style="background: #10b981; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-top: 15px; font-weight: bold;">💾
-                    Lưu Cài Đặt</button>
+            <div class="card">
+                <h2>⚙️ Cài Đặt Cá Nhân</h2>
+                <div style="margin-top: 15px;">
+                    <label style="font-weight: bold;">Ngưỡng nhận diện gù lưng: <span id="thresholdDisplay"
+                            style="color: #2563eb; font-size: 20px;">0.40</span></label>
+                    <br><br>
+                    <input type="range" id="thresholdSlider" min="0.10" max="0.80" step="0.01"
+                        style="width: 100%; cursor: pointer;">
+                    <p style="font-size: 13px; color: #666; margin-top: 8px;">
+                        <i>* Gợi ý: Kéo sang trái nếu ngồi xa camera. Kéo sang phải nếu ngồi gần. (Số càng nhỏ càng
+                            nhạy)</i>
+                    </p>
+                    <button id="BtnsaveThreshold"
+                        style="background: #10b981; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-top: 15px; font-weight: bold;">💾
+                        Lưu Cài Đặt</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <script>
+        <script>
 
-        const { ipcRenderer } = require('electron');
-        document.addEventListener('DOMContentLoaded', () => {
+            const { ipcRenderer } = require('electron');
+            document.addEventListener('DOMContentLoaded', () => {
 
-            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+                const currentUser = JSON.parse(localStorage.getItem('currentUser'));
 
-            // KIỂM TRA ĐĂNG NHẬP
-            if (!currentUser || !currentUser.id) {
-                alert("Phiên làm việc hết hạn, vui lòng đăng nhập lại!");
-                window.close();
-                // window.location.href = 'login.html'; // Chuyển hướng về trang đăng nhập
-                return; // Dừng thực thi các lệnh phía dưới
-            }
+                // KIỂM TRA ĐĂNG NHẬP
+                if (!currentUser || !currentUser.id) {
+                    alert("Phiên làm việc hết hạn, vui lòng đăng nhập lại!");
+                    window.close();
+                    // window.location.href = 'login.html'; // Chuyển hướng về trang đăng nhập
+                    return; // Dừng thực thi các lệnh phía dưới
+                }
 
-            // --- LOGIC HIỆU CHUẨN ---
-            let isCalibrating = false;
-            let calibrationSamples = [];
+                // --- LOGIC HIỆU CHUẨN ---
+                let isCalibrating = false;
+                let calibrationSamples = [];
 
-            function startCalibration() {
-                const statusBody = document.getElementById('calibrationStatus');
-                const btn = document.getElementById('btnCalibrate');
+                function startCalibration() {
+                    const statusBody = document.getElementById('calibrationStatus');
+                    const btn = document.getElementById('btnCalibrate');
 
-                isCalibrating = true;
-                calibrationSamples = [];
-                btn.disabled = true;
+                    isCalibrating = true;
+                    calibrationSamples = [];
+                    btn.disabled = true;
 
-                // Gửi tín hiệu sang index.html qua localStorage để index.html bắt đầu gửi data
-                localStorage.setItem('calibrationStatus', 'START');
+                    // Gửi tín hiệu sang index.html qua localStorage để index.html bắt đầu gửi data
+                    localStorage.setItem('calibrationStatus', 'START');
 
-                let countdown = 3;
-                let timer = setInterval(() => {
-                    statusBody.innerText = `Hãy ngồi thẳng! Bắt đầu sau: ${countdown}s`;
-                    countdown--;
+                    let countdown = 3;
+                    let timer = setInterval(() => {
+                        statusBody.innerText = `Hãy ngồi thẳng! Bắt đầu sau: ${countdown}s`;
+                        countdown--;
 
-                    if (countdown < 0) {
-                        clearInterval(timer);
-                        statusBody.innerText = "⚡ Đang lấy mẫu... (Giữ nguyên tư thế)";
+                        if (countdown < 0) {
+                            clearInterval(timer);
+                            statusBody.innerText = "⚡ Đang lấy mẫu... (Giữ nguyên tư thế)";
 
-                        setTimeout(() => { finishCalibration(); }, 5000);
+                            setTimeout(() => { finishCalibration(); }, 5000);
+                        }
+                    }, 1000);
+                }
+
+                function finishCalibration() {
+                    isCalibrating = false;
+                    const btn = document.getElementById('btnCalibrate');
+                    const statusBody = document.getElementById('calibrationStatus');
+
+                    // Lấy cục data mẫu mà index.html vừa lưu vào localStorage
+                    const samplesStr = localStorage.getItem('calibrationData');
+                    if (samplesStr) {
+                        calibrationSamples = JSON.parse(samplesStr);
                     }
-                }, 1000);
-            }
 
-            function finishCalibration() {
-                isCalibrating = false;
-                const btn = document.getElementById('btnCalibrate');
-                const statusBody = document.getElementById('calibrationStatus');
+                    if (calibrationSamples.length > 0) {
+                        const average = calibrationSamples.reduce((a, b) => a + b) / calibrationSamples.length;
+                        const suggestedThreshold = parseFloat((average * 0.85).toFixed(2));
 
-                // Lấy cục data mẫu mà index.html vừa lưu vào localStorage
-                const samplesStr = localStorage.getItem('calibrationData');
-                if (samplesStr) {
-                    calibrationSamples = JSON.parse(samplesStr);
+                        document.getElementById('thresholdSlider').value = suggestedThreshold;
+                        document.getElementById('thresholdDisplay').innerText = suggestedThreshold;
+                        statusBody.innerText = `✅ Xong! Ngưỡng đề xuất: ${suggestedThreshold}`;
+
+                        saveThreshold(suggestedThreshold);
+                    } else {
+                        statusBody.innerText = "❌ Lỗi: Không nhận diện được khuôn mặt.";
+                    }
+
+                    // Dọn dẹp cờ hiệu chuẩn
+                    localStorage.removeItem('calibrationStatus');
+                    localStorage.removeItem('calibrationData');
+                    btn.disabled = false;
                 }
 
-                if (calibrationSamples.length > 0) {
-                    const average = calibrationSamples.reduce((a, b) => a + b) / calibrationSamples.length;
-                    const suggestedThreshold = parseFloat((average * 0.85).toFixed(2));
-
-                    document.getElementById('thresholdSlider').value = suggestedThreshold;
-                    document.getElementById('thresholdDisplay').innerText = suggestedThreshold;
-                    statusBody.innerText = `✅ Xong! Ngưỡng đề xuất: ${suggestedThreshold}`;
-
-                    saveThreshold(suggestedThreshold);
-                } else {
-                    statusBody.innerText = "❌ Lỗi: Không nhận diện được khuôn mặt.";
+                // --- LOGIC LƯU THRESHOLD ---
+                if (currentUser && currentUser.threshold) {
+                    document.getElementById('thresholdSlider').value = currentUser.threshold;
+                    document.getElementById('thresholdDisplay').innerText = currentUser.threshold;
                 }
 
-                // Dọn dẹp cờ hiệu chuẩn
-                localStorage.removeItem('calibrationStatus');
-                localStorage.removeItem('calibrationData');
-                btn.disabled = false;
-            }
+                document.getElementById('thresholdSlider').addEventListener('input', function () {
+                    document.getElementById('thresholdDisplay').innerText = this.value;
+                });
 
-            // --- LOGIC LƯU THRESHOLD ---
-            if (currentUser && currentUser.threshold) {
-                document.getElementById('thresholdSlider').value = currentUser.threshold;
-                document.getElementById('thresholdDisplay').innerText = currentUser.threshold;
-            }
+                async function saveThreshold(val = null) {
+                    if (!currentUser || !currentUser.id) return;
 
-            document.getElementById('thresholdSlider').addEventListener('input', function () {
-                document.getElementById('thresholdDisplay').innerText = this.value;
+                    // Lấy giá trị truyền vào hoặc đọc từ thanh trượt (slider)
+                    const newThreshold = val !== null ? val : parseFloat(document.getElementById('thresholdSlider').value);
+
+                    try {
+                        // Gọi xuống Backend (main.js) thông qua IPC
+                        const response = await ipcRenderer.invoke('api-update-threshold', {
+                            userId: currentUser.id,
+                            newThreshold: newThreshold
+                        });
+
+                        if (response.success) {
+                            // 1. Cập nhật biến trên RAM
+                            currentUser.threshold = newThreshold;
+
+                            // 2. Lưu xuống LocalStorage để phiên làm việc sau nhớ lấy
+                            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+
+                            // 3. Chỉ thông báo hiển thị lên màn hình nếu user nhấn nút (val === null)
+                            if (val === null) {
+                                alert("✅ Đã lưu cấu hình ngưỡng mới thành công!");
+                            }
+                        } else {
+                            throw new Error(response.message || "Lỗi cập nhật Database");
+                        }
+                    } catch (err) {
+                        alert("❌ Lỗi hệ thống: " + err.message);
+                    }
+                }
+
+                const btnCalibrate = document.getElementById('btnCalibrate');
+                if (btnCalibrate) {
+                    btnCalibrate.addEventListener('click', startCalibration);
+                }
+
+                const btnSaveThreshold = document.getElementById('BtnsaveThreshold');
+                if (btnSaveThreshold) {
+                    // Bọc trong () => để đảm bảo không truyền tham số rác vào hàm
+                    btnSaveThreshold.addEventListener('click', () => {
+                        saveThreshold();
+                    });
+                }
             });
 
-            async function saveThreshold(val = null) {
-                if (!currentUser || !currentUser.id) return;
 
-                // Lấy giá trị truyền vào hoặc đọc từ thanh trượt (slider)
-                const newThreshold = val !== null ? val : parseFloat(document.getElementById('thresholdSlider').value);
 
-                try {
-                    // Gọi xuống Backend (main.js) thông qua IPC
-                    const response = await ipcRenderer.invoke('api-update-threshold', {
-                        userId: currentUser.id,
-                        newThreshold: newThreshold
-                    });
+            const autostartCheckbox = document.getElementById('autostart-checkbox');
 
-                    if (response.success) {
-                        // 1. Cập nhật biến trên RAM
-                        currentUser.threshold = newThreshold;
+            // 1. Khi vừa mở màn hình Settings: Kiểm tra xem app ĐANG bật hay tắt tự khởi động
+            async function loadAutostartStatus() {
+                const isAutostart = await ipcRenderer.invoke('get-autostart-status');
+                autostartCheckbox.checked = isAutostart; // Cập nhật trạng thái cho nút
+            }
+            loadAutostartStatus();
 
-                        // 2. Lưu xuống LocalStorage để phiên làm việc sau nhớ lấy
-                        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            // 2. Khi người dùng click Bật/Tắt cái nút
+            autostartCheckbox.addEventListener('change', (event) => {
+                const isChecked = event.target.checked;
+                // Gửi lệnh xuống main.js để thực thi
+                ipcRenderer.send('toggle-autostart', isChecked);
+            });
 
-                        // 3. Chỉ thông báo hiển thị lên màn hình nếu user nhấn nút (val === null)
-                        if (val === null) {
-                            alert("✅ Đã lưu cấu hình ngưỡng mới thành công!");
-                        }
-                    } else {
-                        throw new Error(response.message || "Lỗi cập nhật Database");
-                    }
-                } catch (err) {
-                    alert("❌ Lỗi hệ thống: " + err.message);
-                }
+            
+            const startHiddenCheckbox = document.getElementById('start-hidden-checkbox');
+            // 1. Hàm tự động chạy khi mở màn hình Settings
+            async function loadSystemSettings() {
+                // Đọc trạng thái từ Database thông qua IPC
+                const isStartHidden = await ipcRenderer.invoke('get-start-hidden-status');
+
+                // Cập nhật trạng thái cho ô tích
+                startHiddenCheckbox.checked = isStartHidden;
             }
 
-            const btnCalibrate = document.getElementById('btnCalibrate');
-            if (btnCalibrate) {
-                btnCalibrate.addEventListener('click', startCalibration);
-            }
+            // Gọi hàm ngay khi load trang
+            loadSystemSettings();
 
-            const btnSaveThreshold = document.getElementById('BtnsaveThreshold');
-            if (btnSaveThreshold) {
-                // Bọc trong () => để đảm bảo không truyền tham số rác vào hàm
-                btnSaveThreshold.addEventListener('click', () => {
-                    saveThreshold();
-                });
-            }
-        });
-
-
-
-        const autostartCheckbox = document.getElementById('autostart-checkbox');
-
-        // 1. Khi vừa mở màn hình Settings: Kiểm tra xem app ĐANG bật hay tắt tự khởi động
-        async function loadAutostartStatus() {
-            const isAutostart = await ipcRenderer.invoke('get-autostart-status');
-            autostartCheckbox.checked = isAutostart; // Cập nhật trạng thái cho nút
-        }
-        loadAutostartStatus();
-
-        // 2. Khi người dùng click Bật/Tắt cái nút
-        autostartCheckbox.addEventListener('change', (event) => {
-            const isChecked = event.target.checked;
-            // Gửi lệnh xuống main.js để thực thi
-            ipcRenderer.send('toggle-autostart', isChecked);
-        });
-    </script>
+            // 2. Gửi lệnh lưu vào DB khi người dùng thay đổi (Code cũ của ông)
+            startHiddenCheckbox.addEventListener('change', (e) => {
+                ipcRenderer.send('update-start-behavior', e.target.checked);
+            });
+        </script>
 </body>
 
 </html>

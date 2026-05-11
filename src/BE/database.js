@@ -28,7 +28,8 @@ function initDB() {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL,
-            threshold REAL
+            threshold REAL,
+            start_minimized INTEGER DEFAULT 0 -- 0 là hiện, 1 là ẩn khi mở
         );
     `;
 
@@ -50,7 +51,17 @@ function initDB() {
     // Thực thi lệnh tạo bảng
     db.exec(createUsersTable);
     db.exec(createLogsTable);
-    
+
+    try {
+        // Thử Query vào cột mới xem có lỗi không
+        db.prepare('SELECT start_minimized FROM users LIMIT 1').get();
+    } catch (err) {
+        // Nếu văng lỗi (tức là cột chưa tồn tại trong bản DB cũ), thì dùng lệnh ALTER để thêm cột
+        if (err.message.includes('no such column')) {
+            db.exec('ALTER TABLE users ADD COLUMN start_minimized INTEGER DEFAULT 0');
+            console.log("Đã cập nhật Database: Thêm cột start_minimized thành công!");
+        }
+    }
     console.log(`✅ Cơ sở dữ liệu đã sẵn sàng tại: ${dbPath}`);
 }
 

@@ -45,6 +45,36 @@ function openDashboard() {
     dashboardWindow.on('closed', () => { dashboardWindow = null; });
 }
 
+function createWindow() {
+    // 1. Đọc tùy chọn từ DB
+    let shouldHide = false;
+    try {
+        const setting = db.prepare('SELECT start_minimized FROM users LIMIT 1').get();
+        if (setting && setting.start_minimized === 1) {
+            shouldHide = true;
+        }
+        // 👇 Thêm dòng này để debug xem DB thực sự đang lưu số mấy
+        console.log(">>> Trạng thái ẩn cửa sổ (shouldHide):", shouldHide); 
+    } catch (err) {
+        console.log("Chưa đọc được cài đặt DB:", err);
+    }
+
+    // 2. Tạo cửa sổ
+    mainWindow = new BrowserWindow({
+        width: 1000,
+        height: 800,
+        show: !shouldHide, // Nếu shouldHide = true thì show = false
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false,
+            backgroundThrottling: false
+        }
+    });
+
+    // Mặc định mở trang Login (Đường dẫn tùy theo thư mục của ông)
+    mainWindow.loadFile(path.join(__dirname, 'src', 'views', 'login.html'));
+}
+
 app.whenReady().then(() => {
     // 1. Tạo cửa sổ chính
     mainWindow = new BrowserWindow({
@@ -127,6 +157,24 @@ app.whenReady().then(() => {
 // =========================================================
 // PHẦN API (BACKEND) - Lắng nghe yêu cầu từ giao diện HTML
 // =========================================================
+
+// API: Cập nhật tùy chọn "Mở Ứng Dụng ở chế độ ẩn" (Start Minimized)
+ipcMain.on('update-start-behavior', (event, startHidden) => {
+    const val = startHidden ? 1 : 0;
+    
+    // Đã thêm "const info =" ở đầu dòng này
+    const info = db.prepare('UPDATE users SET start_minimized = ?').run(val);
+    
+    console.log(`Đã lưu cài đặt chạy ngầm: ${startHidden}`);
+    // Giờ thì biến info đã tồn tại, dòng này sẽ không báo lỗi nữa
+    console.log(`Số dòng trong DB thực sự được cập nhật: ${info.changes}`); 
+});
+
+// API: Lấy trạng thái "Mở thu nhỏ" từ Database để hiển thị lên giao diện
+ipcMain.handle('get-start-hidden-status', () => {
+    const setting = db.prepare('SELECT start_minimized FROM users LIMIT 1').get();
+    return setting ? setting.start_minimized === 1 : false;
+});
 
 // 1. Hàm lắng nghe yêu cầu Bật/Tắt từ giao diện
 ipcMain.on('toggle-autostart', (event, enable) => {
